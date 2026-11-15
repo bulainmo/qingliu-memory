@@ -1,0 +1,1310 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>川中島記憶地層</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* 版面概念：數位虛擬展廳（半透明暖灰的面＝空間），投影台向上投出冷光線條的「記憶地層」（光＝投影）；潛入後轉為暖色紙張場景。刻意單一深色主題。 */
+:root{
+  color-scheme:dark;
+  --void:#0a1216; --holo:#5fe3ff; --holo-dim:#3a8ea0; --holo-ink:#bff4ff;
+  --paper:#e9dcc3; --ink:#2a2018; --sepia:#8a6a48; --gold:#f0d6a8; --warm:#d9c4a3;
+  --serif:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --sans:"Noto Sans TC","Microsoft JhengHei",sans-serif;
+}
+html,body{height:100%}
+body{margin:0;background:var(--void);color:var(--holo-ink);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#c.drag{cursor:grabbing}
+#c.hot{cursor:pointer}
+.scan{position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(95,227,255,.03) 0 1px,transparent 1px 3px);mix-blend-mode:screen}
+.vign{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 45%,rgba(0,0,0,.6) 100%)}
+.hud{position:fixed;font-size:12px;letter-spacing:.18em;color:var(--holo-dim);pointer-events:none}
+.hud.tl{top:calc(18px + env(safe-area-inset-top,0px));left:max(18px,env(safe-area-inset-left,0px))}
+.hud.tl b{display:block;font-family:var(--serif);font-weight:600;font-size:20px;letter-spacing:.3em;color:var(--holo)}
+.hud.bl{bottom:calc(14px + env(safe-area-inset-bottom,0px));left:max(18px,env(safe-area-inset-left,0px));right:max(18px,env(safe-area-inset-right,0px));line-height:1.7}
+#snd{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));background:rgba(95,227,255,.05);border:1px solid rgba(95,227,255,.3);color:var(--holo);font-size:12px;letter-spacing:.15em;padding:7px 12px}
+#snd:focus-visible,.ruler button:focus-visible,#card button:focus-visible{outline:2px solid var(--holo);outline-offset:2px}
+/* 右側年代刻度 */
+.ruler{position:fixed;right:max(14px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:stretch;gap:2px;padding:8px 0 8px 14px;border-left:1px solid rgba(95,227,255,.3)}
+.ruler button{position:relative;background:none;border:0;color:var(--holo-dim);font:600 15px var(--serif);letter-spacing:.12em;padding:9px 12px 9px 8px;min-width:84px;text-align:left;transition:color .25s,background .25s}
+.ruler button::before{content:"";position:absolute;left:-15px;top:50%;width:10px;height:1px;background:currentColor}
+.ruler button:hover{color:var(--holo-ink);background:rgba(95,227,255,.06)}
+.ruler button.on{color:var(--holo-ink);text-shadow:0 0 12px var(--holo);background:rgba(95,227,255,.1)}
+.ruler button.on::before{width:16px;left:-18px;background:var(--holo)}
+.ruler button.ov{font:500 12px var(--sans);letter-spacing:.25em;border:1px solid rgba(95,227,255,.35);text-align:center;margin-bottom:8px;padding:7px 8px}
+.ruler button.ov::before{display:none}
+/* 地點資訊框 */
+#card{position:fixed;left:0;top:0;width:min(300px,72vw);padding:14px 16px 14px;background:rgba(6,26,34,.82);border:1px solid rgba(95,227,255,.6);box-shadow:0 0 24px rgba(95,227,255,.18),inset 0 0 18px rgba(95,227,255,.06);color:var(--holo-ink);opacity:0;pointer-events:none;overflow:hidden;backdrop-filter:blur(2px)}
+#card{z-index:12}
+#card.on{opacity:1;pointer-events:auto;animation:flick .5s steps(1,end)}
+#card::after{content:"";position:absolute;left:0;right:0;top:-40%;height:40%;background:linear-gradient(180deg,transparent,rgba(95,227,255,.22),transparent);pointer-events:none}
+#card.on::after{animation:sweep .9s ease-out}
+@keyframes flick{0%{opacity:0}12%{opacity:.8}20%{opacity:.15}32%{opacity:1}44%{opacity:.4}56%{opacity:1}}
+@keyframes sweep{from{top:-40%}to{top:110%}}
+#card .yr{font:900 30px var(--serif);color:var(--holo);line-height:1;letter-spacing:.04em}
+#card .nm{font-size:11px;letter-spacing:.25em;color:var(--holo-dim);margin:6px 0 8px}
+#card h3{margin:0 0 6px;font:600 18px var(--serif);color:#e6fbff}
+#card p{margin:0 0 12px;font:400 13.5px/1.75 var(--sans);color:#a9dce8}
+#card .row{display:flex;gap:8px;align-items:center}
+#card .go{flex:1;background:rgba(95,227,255,.14);border:1px solid var(--holo);color:var(--holo-ink);padding:9px 10px;letter-spacing:.15em;font-size:13px}
+#card .go:hover{background:rgba(95,227,255,.28)}
+#card .go[disabled]{opacity:.4;cursor:default}
+#card .x{background:none;border:1px solid rgba(95,227,255,.35);color:var(--holo);width:34px;height:34px;font-size:18px;line-height:1}
+#tip{position:fixed;pointer-events:none;padding:6px 10px;border:1px solid rgba(95,227,255,.6);background:rgba(4,20,28,.85);color:var(--holo-ink);font-size:12px;transform:translate(14px,-50%);opacity:0;transition:opacity .15s;white-space:nowrap}
+#tip.on{opacity:1}
+/* 入口 */
+#gate{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:radial-gradient(ellipse at center,rgba(10,18,22,.5),rgba(6,10,13,.94) 70%);text-align:center;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));transition:opacity 1.2s}
+#gate.off{opacity:0;pointer-events:none}
+#gate .k{font-size:12px;letter-spacing:.4em;color:var(--holo-dim)}
+#gate h1{margin:0;font-family:var(--serif);font-weight:900;font-size:clamp(28px,5vw,56px);letter-spacing:.12em;color:var(--holo-ink);text-shadow:0 0 30px rgba(95,227,255,.35);text-wrap:balance}
+#gate p{margin:0;font-family:var(--serif);font-size:clamp(14px,1.6vw,17px);color:#8fcfdd;letter-spacing:.2em}
+#enter{margin-top:22px;background:none;border:1px solid var(--holo);color:var(--holo-ink);padding:12px 34px;letter-spacing:.4em;font-size:14px;transition:background .3s}
+#enter:hover,#enter:focus-visible{background:rgba(95,227,255,.15);outline:none}
+#gate small{margin-top:8px;color:var(--holo-dim);font-size:11px;letter-spacing:.15em}
+/* 穿越過場 */
+#warm{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at center,#f3e6cc 0%,#c9a77c 45%,#5a3f26 100%)}
+/* 場景 */
+#scene{touch-action:pan-y;position:fixed;inset:0;z-index:15;background:var(--paper);color:var(--ink);opacity:0;pointer-events:none;transition:opacity .9s ease;overflow:hidden}
+#scene.on{opacity:1;pointer-events:auto}
+#scene:not(.on),#scene:not(.on) *{pointer-events:none!important}
+#scene .bg{position:absolute;inset:0;background-size:cover;background-position:center;transform:scale(1.12);transition:transform 14s linear}
+#scene.on .bg{transform:scale(1.0)}
+#scene .card{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#e6d7bb}
+#scene .card span{font-family:var(--serif);font-size:clamp(18px,2.4vw,26px);color:var(--sepia);letter-spacing:.3em;border:1px dashed var(--sepia);padding:1em 1.6em}
+#scene .grad{position:absolute;inset:0;background:linear-gradient(90deg,rgba(26,18,12,.82) 0%,rgba(26,18,12,.55) 38%,transparent 70%)}
+#scene .txt{position:absolute;left:max(6vw,env(safe-area-inset-left,0px));bottom:12vh;max-width:min(560px,86vw);color:#f6efe2}
+#scene .yr{font-family:var(--serif);font-weight:900;font-size:clamp(48px,8vw,104px);line-height:1;color:var(--gold);letter-spacing:.04em}
+#scene h2{font-family:var(--serif);font-weight:600;font-size:clamp(22px,3vw,34px);margin:.3em 0 .6em;text-wrap:balance}
+#scene p{font-family:var(--serif);font-size:clamp(15px,1.5vw,18px);line-height:1.85;margin:0 0 .7em;color:#eadfcb;opacity:0;transform:translateY(10px);transition:opacity .8s,transform .8s}
+#scene p.on{opacity:1;transform:none}
+#scene .src{font-size:11.5px;line-height:1.6;color:#d9cbb2;opacity:0;transition:opacity .8s;margin-top:1.2em;border-top:1px solid rgba(234,223,203,.25);padding-top:.6em}
+#scene .src.on{opacity:.75}
+#hsl{position:absolute;inset:0;pointer-events:none;z-index:2;transform:scale(1.12);transition:transform 14s linear}
+#scene.on #hsl{transform:scale(1)}
+#hsl button{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:1.5px solid rgba(255,244,220,.95);background:rgba(240,214,168,.25);pointer-events:auto;box-shadow:0 0 0 0 rgba(255,236,200,.7);animation:hsp 2.4s ease-out infinite;opacity:0;transition:opacity .6s}
+#hsl button::after{content:"";position:absolute;inset:9px;border-radius:50%;background:#fff3dc}
+#hsl.on button{opacity:1}
+#hsl button:hover,#hsl button:focus-visible,#hsl button.on{background:rgba(240,214,168,.6);outline:none;transform:scale(1.15)}
+#hsl button span{position:absolute;left:34px;top:50%;transform:translateY(-50%);white-space:nowrap;font:600 12.5px var(--serif);color:#fff6e6;text-shadow:0 1px 6px rgba(0,0,0,.9);letter-spacing:.06em}
+@keyframes hsp{0%{box-shadow:0 0 0 0 rgba(255,236,200,.6)}70%{box-shadow:0 0 0 16px rgba(255,236,200,0)}100%{box-shadow:0 0 0 0 rgba(255,236,200,0)}}
+#hcnt{position:absolute;top:calc(18px + env(safe-area-inset-top,0px));left:calc(max(18px,env(safe-area-inset-left,0px)) + 236px);background:rgba(26,18,12,.42);color:#f0d6a8;border:1px solid rgba(240,214,168,.4);padding:9px 12px;font-size:12.5px;letter-spacing:.08em;z-index:3;pointer-events:none}
+#hsl button.seen{background:rgba(240,214,168,.08);border-color:rgba(255,244,220,.55)}
+#txtt{position:absolute;top:calc(18px + env(safe-area-inset-top,0px));left:calc(max(18px,env(safe-area-inset-left,0px)) + 132px);background:rgba(26,18,12,.55);color:#f6efe2;border:1px solid rgba(246,239,226,.5);padding:9px 14px;font-size:13px;letter-spacing:.1em;z-index:3}
+#scene.notxt .txt,#scene.notxt .grad{opacity:0;pointer-events:none}
+#scene .txt,#scene .grad{transition:opacity .5s}
+#scene .txt{z-index:2}
+#hnote{position:absolute;z-index:5;width:min(320px,82vw);padding:14px 16px 12px;background:#f3e8d2;color:#2a2018;border:1px solid #8a6a48;box-shadow:0 10px 30px rgba(20,12,6,.45);opacity:0;pointer-events:none;transform:translateY(6px);transition:opacity .3s,transform .3s}
+#hnote.on{opacity:1;pointer-events:auto;transform:none}
+#hnote h4{margin:0 26px 6px 0;font:700 17px var(--serif);color:#5a3b22}
+#hnote p{opacity:1;transform:none;margin:0 0 8px;font:400 14.5px/1.8 var(--serif);color:#2f241a}
+#hnote small{display:block;font-size:11px;line-height:1.5;color:#8a6a48}
+#hnote .x,#more .x{position:absolute;top:6px;right:6px;width:30px;height:30px;background:none;border:0;font-size:18px;color:#6a4a2c}
+#syear{position:absolute;z-index:3;right:max(16px,env(safe-area-inset-right,0px));top:calc(18px + env(safe-area-inset-top,0px));display:flex;gap:2px;background:rgba(26,18,12,.5);border:1px solid rgba(246,239,226,.35);padding:3px}
+#syear button{background:none;border:0;color:#d9cbb2;font:600 14px var(--serif);padding:7px 10px;letter-spacing:.05em}
+#syear button.on{background:#f0d6a8;color:#2a2018}
+#syear button:focus-visible{outline:2px solid var(--gold)}
+#morb{position:absolute;z-index:3;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(46px + env(safe-area-inset-bottom,0px));background:#f0d6a8;color:#2a2018;border:0;padding:11px 18px;font:600 14px var(--serif);letter-spacing:.12em;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+#more{position:absolute;z-index:6;left:0;right:0;bottom:0;max-height:78vh;overflow:auto;background:#efe3cb;color:#2a2018;border-top:1px solid #8a6a48;transform:translateY(105%);transition:transform .5s cubic-bezier(.2,.8,.2,1);padding:0 max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+#more.on{transform:none}
+#more .mh{position:sticky;top:0;background:#efe3cb;padding:14px 0 10px;font:700 19px var(--serif);letter-spacing:.15em;color:#5a3b22}
+#more .mc{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+#more .c{background:#f8f0e0;border:1px solid rgba(90,63,38,.25);padding:0 0 12px}
+#more .c img{display:block;width:100%;height:150px;object-fit:cover}
+#more .c h5{margin:10px 14px 4px;font:700 16px var(--serif);color:#5a3b22}
+#more .c p{opacity:1;transform:none;margin:0 14px 6px;font:400 14px/1.75 var(--serif);color:#2f241a}
+#more .c small{display:block;margin:0 14px;font-size:11px;color:#8a6a48;line-height:1.5}
+#toast{position:fixed;left:50%;bottom:calc(70px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:17;max-width:86vw;background:rgba(26,18,12,.85);color:#f6efe2;font-size:13px;line-height:1.6;padding:10px 14px;opacity:0;pointer-events:none;transition:opacity .4s;text-align:center}
+#toast.on{opacity:1}
+#hopc{position:fixed;inset:0;width:100%;height:100%;z-index:16;pointer-events:none}
+#wait{position:fixed;left:50%;top:58%;transform:translateX(-50%);z-index:17;font:400 14px var(--sans);letter-spacing:.4em;color:#5a3f26;opacity:0;transition:opacity .4s;pointer-events:none}
+#wait.on{opacity:.85;animation:blink 1.4s steps(1) infinite}
+#scene .typo{position:absolute;inset:0;background:radial-gradient(ellipse at 70% 45%,#f4ead6,#dcc8a6 75%)}
+#scene .typo b{position:absolute;left:72%;top:46%;transform:translate(-50%,-50%);writing-mode:vertical-rl;white-space:nowrap;font:900 clamp(110px,19vw,260px)/1 var(--serif);color:#4a3220;letter-spacing:.1em;opacity:.88;text-shadow:0 2px 0 rgba(255,255,255,.4)}
+#scene .typo i{position:absolute;left:72%;bottom:9%;transform:translateX(-50%);font:400 12px var(--sans);font-style:normal;letter-spacing:.3em;color:#8a6a48;white-space:nowrap}
+#scene .credit{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));font-size:11px;color:#eadfcb;opacity:.8;text-align:right;max-width:50vw}
+#back{position:absolute;top:calc(18px + env(safe-area-inset-top,0px));left:max(18px,env(safe-area-inset-left,0px));background:rgba(26,18,12,.55);color:#f6efe2;border:1px solid rgba(246,239,226,.5);padding:9px 16px;font-size:13px;letter-spacing:.12em}
+#back:focus-visible{outline:2px solid var(--gold)}
+/* ===== 年代說明框（記憶地層左側） ===== */
+#lp{position:fixed;left:max(18px,env(safe-area-inset-left,0px));top:50%;transform:translateY(-50%);width:min(320px,28vw);max-height:70vh;overflow:auto;padding:16px 18px;background:rgba(6,22,30,.72);border:1px solid rgba(95,227,255,.35);border-left:2px solid var(--holo);color:var(--holo-ink);opacity:0;pointer-events:none;transition:opacity .4s;backdrop-filter:blur(2px)}
+#lp.on{opacity:1;pointer-events:auto}
+#lptd{display:block;margin-top:12px;width:100%;background:rgba(240,214,168,.14);border:1px solid rgba(240,214,168,.7);color:#f6e6c8;padding:10px 12px;font:600 14px var(--serif);letter-spacing:.12em;text-align:left}
+#lptd[hidden]{display:none}
+#lp .k{font-size:11px;letter-spacing:.3em;color:var(--holo-dim)}
+#lp h3{margin:4px 0 10px;font:600 20px var(--serif);color:#e6fbff;letter-spacing:.06em}
+#lp ul{margin:0;padding:0;list-style:none}
+#lp li{position:relative;padding-left:14px;margin:0 0 9px;font-size:13.5px;line-height:1.7;color:#b5e3ee}
+#lp li::before{content:"";position:absolute;left:0;top:.75em;width:6px;height:1px;background:var(--holo)}
+#lp .src{margin-top:10px;padding-top:8px;border-top:1px solid rgba(95,227,255,.2);font-size:11px;line-height:1.6;color:var(--holo-dim)}
+#lp .tog{display:none}
+/* ===== 頂端按鈕 ===== */
+#navb{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));right:calc(max(16px,env(safe-area-inset-right,0px)) + 104px);background:rgba(95,227,255,.05);border:1px solid rgba(95,227,255,.3);color:var(--holo);font-size:12px;letter-spacing:.15em;padding:7px 12px;opacity:0;pointer-events:none;transition:opacity .4s}
+#navb.on{opacity:1;pointer-events:auto}
+#navb:focus-visible{outline:2px solid var(--holo);outline-offset:2px}
+/* ===== 館內導覽圖 ===== */
+#plan{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(4,10,13,.86);opacity:0;pointer-events:none;transition:opacity .35s;padding:16px}
+#plan.on{opacity:1;pointer-events:auto}
+#plan .box{width:min(720px,100%);border:1px solid rgba(95,227,255,.4);background:rgba(6,22,30,.9);padding:20px 22px 22px;color:var(--holo-ink)}
+#plan .hd{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+#plan h2{margin:0;font:600 20px var(--serif);letter-spacing:.2em;color:var(--holo)}
+#plan .hd button{background:none;border:1px solid rgba(95,227,255,.35);color:var(--holo);width:34px;height:34px;font-size:18px}
+#plan svg{display:block;width:100%;height:auto;margin-top:12px}
+#plan .rm{cursor:pointer}
+#plan .rm rect,#plan .rm circle{fill:rgba(95,227,255,.06);stroke:rgba(95,227,255,.55);transition:fill .2s}
+#plan .rm:hover rect,#plan .rm:hover circle,#plan .rm:focus rect,#plan .rm:focus circle{fill:rgba(95,227,255,.2)}
+#plan .rm.here rect,#plan .rm.here circle{stroke:var(--holo);stroke-width:2.2}
+#plan .rm text{fill:#e6fbff;font:600 15px var(--serif);letter-spacing:.12em}
+#plan .rm text.s{fill:var(--holo-dim);font:400 10.5px var(--sans);letter-spacing:.12em}
+#plan .rm:focus{outline:none}
+#plan .note{margin:10px 0 0;font-size:12px;color:var(--holo-dim);letter-spacing:.08em}
+/* ===== 序廳 ===== */
+#pro{position:fixed;inset:0;z-index:20;background:#060c0f;opacity:0;pointer-events:none;transition:opacity .8s}
+#pro.on{opacity:1;pointer-events:auto}
+#pc{position:absolute;inset:0;width:100%;height:100%}
+#pro::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46vh;background:linear-gradient(180deg,rgba(6,12,15,0),rgba(6,12,15,.88) 55%);pointer-events:none;z-index:1}
+#pcap,#pro .ctl,#pro .who,#pro .fn,#pro .step{z-index:2}
+#pcap{position:absolute;left:50%;bottom:calc(13vh + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(680px,88vw);text-align:center;font:400 clamp(16px,1.9vw,21px)/1.9 var(--serif);color:#dff8ff;letter-spacing:.06em;text-shadow:0 0 18px rgba(95,227,255,.35);min-height:4em}
+#pcap .cur{display:inline-block;width:.5em;height:1.05em;vertical-align:-.15em;background:var(--holo);margin-left:2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+#pro .who{position:absolute;left:50%;bottom:calc(13vh + 4.6em + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-size:11px;letter-spacing:.4em;color:var(--holo-dim)}
+#pro .ctl{position:absolute;left:0;right:0;bottom:calc(4vh + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;gap:12px}
+#pskip{position:absolute;z-index:2;top:calc(16px + env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));background:none;border:0;color:var(--holo-dim);font-size:12.5px;letter-spacing:.2em;padding:8px 4px}
+#pskip:hover,#pskip:focus-visible{color:var(--holo-ink);outline:none;text-decoration:underline}
+#pro .ctl button{background:none;border:1px solid rgba(95,227,255,.45);color:var(--holo-ink);padding:10px 22px;letter-spacing:.25em;font-size:13px}
+#pro .ctl button{min-width:120px}
+#pro .ctl button.main{border-color:var(--holo);background:rgba(95,227,255,.12)}
+#pro .ctl button:focus-visible{outline:2px solid var(--holo);outline-offset:2px}
+#pro .step{position:absolute;top:calc(20px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);display:flex;gap:8px}
+#pro .step i{width:22px;height:2px;background:rgba(95,227,255,.25)}
+#pro .step i.on{background:var(--holo)}
+#pro .fn{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));font-size:10.5px;color:var(--holo-dim);text-align:right;max-width:60vw;line-height:1.5}
+/* ===== 紙張展間（年表、資料） ===== */
+.room{position:fixed;inset:0;z-index:25;background:var(--paper);color:var(--ink);overflow:auto;opacity:0;pointer-events:none;transition:opacity .6s;-webkit-overflow-scrolling:touch}
+.room.on{opacity:1;pointer-events:auto}
+.room::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 0%,rgba(255,250,238,.6),transparent 60%),repeating-linear-gradient(0deg,rgba(90,63,38,.025) 0 1px,transparent 1px 4px)}
+.room .bar{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) 12px max(18px,env(safe-area-inset-left,0px));background:linear-gradient(180deg,var(--paper) 70%,rgba(233,220,195,0))}
+.room .bar button{background:rgba(42,32,24,.06);border:1px solid rgba(42,32,24,.35);color:var(--ink);padding:8px 14px;font-size:13px;letter-spacing:.12em}
+.room .bar button:focus-visible{outline:2px solid var(--sepia);outline-offset:2px}
+.room .in{position:relative;max-width:760px;margin:0 auto;padding:8px 20px 80px}
+.room h1{font:900 clamp(32px,5vw,52px) var(--serif);letter-spacing:.12em;margin:.3em 0 .2em;color:#3a2a1c}
+.room .lead{font:400 clamp(15px,1.6vw,17px)/1.9 var(--serif);color:#5a4632;margin:0 0 2em;text-wrap:pretty}
+/* 年表 */
+.tl{position:relative;margin:0;padding:0 0 0 26px;list-style:none;border-left:1px solid rgba(90,63,38,.35)}
+.tl li{position:relative;margin:0 0 26px}
+.tl li::before{content:"";position:absolute;left:-31px;top:.55em;width:9px;height:9px;border-radius:50%;background:var(--paper);border:2px solid var(--sepia)}
+.tl li.key::before{background:var(--sepia)}
+.tl .d{font:900 20px var(--serif);color:#7a5332;letter-spacing:.04em}
+.tl .d small{font:500 13px var(--sans);color:#8a6a48;margin-left:.5em;letter-spacing:.05em}
+.tl p{margin:.25em 0 .3em;font:400 16px/1.85 var(--serif);color:#2f241a;text-wrap:pretty}
+.tl .s{font-size:11.5px;color:#8a6a48;line-height:1.6}
+.tl .go{margin-top:4px;background:none;border:0;border-bottom:1px solid #8a6a48;color:#6a4a2c;padding:2px 0;font-size:13px;letter-spacing:.08em}
+.tl .go:focus-visible{outline:2px solid var(--sepia)}
+/* 今天的清流廳 */
+.today .in{max-width:980px}
+.today .sec{margin:3.2em 0 0}
+.today .sec>h2{font:900 clamp(22px,3vw,30px) var(--serif);letter-spacing:.14em;color:#3a2a1c;margin:0 0 .3em}
+.today .sec>.k{font:400 13px var(--sans);letter-spacing:.3em;color:#8a6a48;margin:0 0 1.2em}
+.today .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px 26px}
+.today .c{margin:0}
+.today .c.wide{grid-column:1/-1}
+.today .c img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block;filter:sepia(.12) saturate(.95);border:1px solid rgba(90,63,38,.25)}
+.today .c.wide img{aspect-ratio:16/7}
+.today .c h3{font:700 19px var(--serif);letter-spacing:.08em;color:#3a2a1c;margin:.75em 0 .3em}
+.today .c p{font:400 15.5px/1.9 var(--serif);color:#2f241a;margin:0 0 .4em;text-wrap:pretty}
+.today .c small{display:block;font-size:11.5px;line-height:1.6;color:#8a6a48}
+.today .num{display:flex;flex-wrap:wrap;gap:14px 34px;margin:1em 0 0}
+.today .num div{font:400 13px var(--sans);color:#8a6a48;letter-spacing:.1em}
+.today .num b{display:block;font:900 clamp(30px,4vw,44px)/1.1 var(--serif);color:#7a5332;letter-spacing:.02em}
+@media (max-width:640px){.today .grid{grid-template-columns:1fr}.today .c.wide img{aspect-ratio:3/2}}
+/* 資料室 */
+.ref h2{font:600 20px var(--serif);letter-spacing:.12em;color:#3a2a1c;margin:2em 0 .7em;padding-bottom:.4em;border-bottom:1px solid rgba(90,63,38,.3)}
+.ref ol,.ref ul{margin:0;padding-left:1.4em}
+.ref li{margin:0 0 .8em;font:400 14.5px/1.75 var(--serif);color:#2f241a;overflow-wrap:anywhere}
+.ref li small{display:block;color:#8a6a48;font:400 12px/1.6 var(--sans)}
+.ref a{color:#6a4a2c}
+.ref p{font:400 14.5px/1.85 var(--serif);color:#3f3022}
+@media (max-width:640px){
+  #lp{top:auto;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:none;left:10px;right:96px;width:auto;max-height:46vh;padding:10px 12px}
+  #lp h3{font-size:16px;margin:2px 0 4px}
+  #lp .tog{display:inline-block;float:right;background:none;border:1px solid rgba(95,227,255,.4);color:var(--holo);font-size:11px;padding:3px 8px;letter-spacing:.1em}
+  #lp:not(.open) ul,#lp:not(.open) .src{display:none}
+  #lp.on~#hint,body.lpon #hint{opacity:0}
+  #navb{right:calc(max(16px,env(safe-area-inset-right,0px)) + 92px)}
+  .hud.tl b{font-size:17px}
+  #plan svg text{font-size:13px}
+  #pro .who{display:none}
+  #pro .fn{top:calc(58px + env(safe-area-inset-top,0px));bottom:auto;left:16px;right:16px;max-width:none;text-align:center}
+  #pcap{bottom:calc(11vh + 40px + env(safe-area-inset-bottom,0px))}
+  .hud.tl{max-width:calc(100vw - 230px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+
+@media (max-width:640px){
+  .ruler{right:max(8px,env(safe-area-inset-right,0px));padding-left:10px}
+  .ruler button{min-width:62px;font-size:13px;padding:8px 6px}
+  .ruler button::before{left:-11px;width:7px}
+  .hud.bl{text-align:left;font-size:11px;letter-spacing:.06em;right:90px}
+  #scene .grad{background:linear-gradient(0deg,rgba(26,18,12,.88) 0%,rgba(26,18,12,.5) 55%,transparent 85%)}
+  #scene .txt{bottom:8vh}
+  #scene .card{align-items:flex-start;padding-top:16vh}
+  #txtt{left:auto;right:max(12px,env(safe-area-inset-right,0px));top:calc(112px + env(safe-area-inset-top,0px));padding:7px 10px;font-size:12px}
+  #hcnt{left:auto;right:max(12px,env(safe-area-inset-right,0px));top:calc(152px + env(safe-area-inset-top,0px));padding:5px 9px;font-size:11.5px}
+  #syear{left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));top:calc(64px + env(safe-area-inset-top,0px));justify-content:space-between;width:auto}
+  #syear{right:max(12px,env(safe-area-inset-right,0px))}
+  #syear button{padding:6px 5px;font-size:12.5px}
+  #hsl button span{display:none}
+  #scene .bg,#scene.on .bg,#hsl,#scene.on #hsl{transform:none;transition:none}
+  #morb{bottom:auto;top:calc(186px + env(safe-area-inset-top,0px));padding:7px 10px;font-size:12px}
+  #scene .typo b{left:50%;top:34%;opacity:.16;transition:opacity .5s}
+  #scene.notxt .typo b{opacity:.88}
+  #scene .typo i{left:50%;bottom:auto;top:58%}
+}
+@media (prefers-reduced-motion:reduce){#scene .bg{transition:none}#gate{transition:none}#card.on,#card.on::after{animation:none}}
+</style>
+
+<canvas id="c" aria-label="數位展廳：投影台上的川中島記憶地層，五個年代的地圖上下疊合"></canvas>
+<div class="scan"></div><div class="vign"></div>
+<div class="hud tl"><b>記憶地層</b>川中島 ・ ALANG GLUBAN</div>
+<div class="hud bl" id="hint"></div>
+<button id="snd" aria-pressed="true">聲音　開</button>
+<nav class="ruler" id="ruler" aria-label="年代"></nav>
+<div id="tip"></div>
+<div id="card" role="dialog" aria-live="polite">
+  <div class="yr" id="cy"></div><div class="nm" id="cn"></div>
+  <h3 id="ct"></h3><p id="cp"></p>
+  <div class="row"><button class="go" id="cgo">進入這個年代 →</button><button class="x" id="cx" aria-label="關閉">×</button></div>
+</div>
+<div id="warm"></div>
+
+<section id="scene" aria-hidden="true">
+  <div class="bg" id="sbg"></div>
+  <div class="grad"></div>
+  <div id="hsl" aria-label="畫面中的可點物件"></div>
+  <button id="back">← 回到展廳</button>
+  <button id="txtt" aria-pressed="false">只看畫面</button>
+  <div id="hcnt" aria-live="polite"></div>
+  <div class="txt"><div class="yr" id="syr"></div><h2 id="sh"></h2><div id="sp"></div><div class="src" id="ssrc"></div></div>
+  <div class="credit" id="scr"></div>
+  <nav id="syear" aria-label="在同一個地點切換年代"></nav>
+  <button id="morb" hidden>走進今天的清流廳 →</button>
+  <div id="hnote" role="dialog" aria-live="polite"><button class="x" aria-label="關閉">×</button><h4></h4><p></p><small></small></div>
+  <div id="more" aria-label="今天的清流"><div class="mh"><b>今天的清流</b><button class="x" aria-label="關閉">×</button></div><div class="mc" id="mcards"></div></div>
+</section>
+<div id="wait" aria-live="polite">時空定位中…</div>
+<canvas id="hopc" aria-hidden="true"></canvas>
+<div id="toast" role="status"></div>
+
+<div id="gate">
+  <div class="k">清流部落 ・ ALANG GLUBAN</div>
+  <h1>霧社事件餘生紀念館<br>數位館</h1>
+  <p>賽德克族的故事</p>
+  <button id="enter">進入</button>
+  <small>建議開啟聲音</small>
+</div>
+
+<aside id="lp" aria-live="polite"><button class="tog" id="lptog">展開</button><div class="k" id="lpk"></div><h3 id="lph"></h3><ul id="lpu"></ul><div class="src" id="lps"></div></aside>
+<button id="navb" aria-haspopup="dialog" aria-label="館內導覽">導覽</button>
+
+<div id="plan" role="dialog" aria-modal="true" aria-label="館內導覽圖">
+  <div class="box">
+    <div class="hd"><h2>館內導覽圖</h2><button id="planx" aria-label="關閉">×</button></div>
+    <svg viewBox="0 0 660 330" role="list" aria-label="展間">
+      <g stroke="rgba(95,227,255,.25)" fill="none"><path d="M120 165 H215 M445 165 H520 M330 75 V40 M330 255 V290 M420 230 L490 262" stroke-dasharray="4 5"/></g>
+      <g class="rm" data-go="pro" tabindex="0" role="listitem"><rect x="20" y="115" width="100" height="100"/><text x="70" y="160" text-anchor="middle">序廳</text><text class="s" x="70" y="182" text-anchor="middle">這是哪裡</text></g>
+      <g class="rm" data-go="map" tabindex="0" role="listitem"><circle cx="330" cy="165" r="112"/><text x="330" y="160" text-anchor="middle">記憶地層</text><text class="s" x="330" y="182" text-anchor="middle">主展廳・五個年代的地圖</text></g>
+      <g class="rm" data-go="time" tabindex="0" role="listitem"><rect x="520" y="115" width="120" height="100"/><text x="580" y="160" text-anchor="middle">年表廳</text><text class="s" x="580" y="182" text-anchor="middle">1930 到今天</text></g>
+      <g class="rm" data-go="today" tabindex="0" role="listitem"><rect x="490" y="240" width="160" height="70"/><text x="570" y="272" text-anchor="middle">今天的清流廳</text><text class="s" x="570" y="292" text-anchor="middle">部落的現在</text></g>
+      <g class="rm" data-go="ref" tabindex="0" role="listitem"><rect x="270" y="290" width="120" height="36"/><text x="330" y="313" text-anchor="middle" style="font-size:13px">資料與授權</text></g>
+      <text x="330" y="28" text-anchor="middle" fill="rgba(95,227,255,.45)" font-size="11" letter-spacing="3">大門</text>
+    </svg>
+    <p class="note">「關於本計畫」展間籌備中。</p>
+  </div>
+</div>
+
+<section id="pro" aria-label="序廳">
+  <canvas id="pc"></canvas>
+  <div class="step" id="pstep"></div>
+  <div class="who">導覽 ・ 投影系統</div>
+  <div id="pcap" aria-live="polite"></div>
+  <button id="pskip">略過導覽 ›</button>
+  <div class="ctl"><button id="pprev">‹ 上一步</button><button id="pnext" class="main">下一步 ›</button></div>
+  <div class="fn">地圖 © OpenStreetMap 貢獻者　遷移路線為示意<br>資料：郭明正〈川中島─清流部落的歷史沿革〉；村上優（2018）</div>
+</section>
+
+<section class="room" id="time" aria-label="年表廳" aria-hidden="true">
+  <div class="bar"><button data-go="map">← 回到記憶地層</button><button class="pl">館內導覽</button></div>
+  <div class="in">
+    <h1>年表</h1>
+    <p class="lead">從 1930 年到今天，這座臺地上發生過的事。每一條都附上出處；不同文獻記載不一致時，兩種說法都列出來。</p>
+    <ol class="tl" id="tll"></ol>
+  </div>
+</section>
+
+<section class="room today" id="today" aria-label="今天的清流廳" aria-hidden="true">
+  <div class="bar"><button data-go="map" data-layer="今天">← 回到記憶地層</button><button class="pl">館內導覽</button></div>
+  <div class="in" id="tdin"></div>
+</section>
+
+<section class="room ref" id="ref" aria-label="資料與授權" aria-hidden="true">
+  <div class="bar"><button data-go="map">← 回到記憶地層</button><button class="pl">館內導覽</button></div>
+  <div class="in">
+    <h1>資料與授權</h1>
+    <p class="lead">本館的文字依下列文獻改寫，不直接引用訪談內容。若發現錯誤，歡迎指正。</p>
+    <h2>文獻</h2>
+    <ol>
+      <li>村上優（2018）。《日本殖民主義治理中的現代性：成為「模範蕃社：川中島」1931–1945》。國立臺灣大學人類學系碩士論文。<small>https://tdr.lib.ntu.edu.tw/bitstream/123456789/1362/1/ntu-107-1.pdf</small></li>
+      <li>郭明正（Dakis Pawan）。〈川中島─清流部落的歷史沿革〉。國立臺灣圖書館。<small>https://www.ntl.edu.tw/public/Attachment/41151448451.pdf；文中轉引高永清《霧社緋桜の狂い咲き》與《臺灣霧社蜂起事件 研究與資料》</small></li>
+      <li>Takun Walis（邱建堂）（2010）。〈ガヤと霧社事件〉。《日本台湾学会報》12，頁 7–20。<small>https://jats.gr.jp/cp-bin/wordpress5/wp-content/uploads/2022/07/gakkaiho012_03.pdf</small></li>
+      <li>北村嘉恵（2010）。〈「台湾原住民族にとっての霧社事件」を問う〉。《日本台湾学会報》12，頁 29–44。<small>https://jats.gr.jp/cp-bin/wordpress5/wp-content/uploads/2022/07/gakkaiho012_05.pdf</small></li>
+      <li>悠蘭．多又（撰寫）。〈清流部落餘生紀念館空間造景〉。國家文化記憶庫，原住民族委員會原住民族文化發展中心建檔，CC BY-SA 3.0 TW。<small>https://tcmb.culture.tw/zh-tw/detail?indexCode=Culture_Object&amp;id=734074</small></li>
+      <li>林遠沖（2021 年 5 月 24 日）。清流部落餘生紀念館相關報導。原住民族文化事業基金會（原文會）新聞。</li>
+      <li>霧社事件餘生紀念館館內展板：〈清流部落餘生紀念館沿革〉（清流社區發展協會）、〈川中島祠〉〈清流部落「餘生紀念碑」〉〈川中島教育所〉〈皇民化運動〉〈國民政府治理下的山地政策〉〈清流部落〉〈921 地震災後重建與社區營造〉〈清流部落餘生紀念館〉（原住民族委員會製作）等。2026 年 11 月田調時抄錄；展板影像不公開。</li>
+      <li>中原部落：原視新聞（2024-09-06）尋根祭祖報導；〈德固達雅部落史地〉（南投縣國小鄉土教材，轉引郭明正《又見真相》、自由時報 2019-10-21 等）。</li>
+      <li>川中米、三酸：農業部農業知識入口網；今周刊（2025-11-27）；中時新聞網（2019-06-14）；原視新聞（2022-12-14）。</li>
+    </ol>
+    <h2>地圖</h2>
+    <p>河流、道路、建物與行政界線：© OpenStreetMap 貢獻者，以 ODbL 授權（openstreetmap.org/copyright）；2026 年 11 月擷取，經簡化。地圖呈現的是今天的河道與道路，過去年代沿用同一底圖。「阿比斯溪」對應的支流，是依郭明正文中「由東北向西南流經臺地中央」的描述判讀。序廳的遷移路線只依「經眉溪、埔里」的文字記載畫出示意，並非實際路徑。</p>
+    <p>地形高度：AWS Terrain Tiles（terrarium 格式，整合 SRTM 等公開高程資料），以 50 公尺間距取樣，高度約誇張 2.2 倍。教會、露營區等現況以 Google 地圖查詢核對，未從其擷取地圖資料。</p>
+    <h2>圖像</h2>
+    <ul>
+      <li>駐在所／派出所 1931 的照片：〈The forced displacement site Kawanakajima of the protected aboriginals 1931〉，作者不詳，公有領域，via Wikimedia Commons。</li>
+      <li>紀念碑之地 1937、1950，水田 1931，訓練地 1937 的場景插畫：AI 輔助繪製（ChatGPT）的示意插畫，非史實影像。館內老照片只以文字描述作為參考，未上傳、未複製構圖。</li>
+      <li>駐在所／派出所「今天」、訓練地「今天」、市集：林彥廷攝於 2026 年 10 月 31 日田調。訓練地的照片是從坡下往上拍活動中心背面；牆上壁畫屬戶外長期展示的美術著作，依著作權法第 58 條得以攝影方式利用。</li>
+      <li>「今天」場景照片，以及今天的清流廳的清風路、清流梅園、中原部落照片：lienyuan lee，CC BY 3.0，via Wikimedia Commons（commons.wikimedia.org，檔名〈清流部落 Gluban - panoramio.jpg〉〈清流梅園 Gluban Plum Garden - panoramio.jpg〉〈中原部落 Zhongyuan Community - panoramio.jpg〉〈川中島 Gluban - panoramio.jpg〉〈Beigang River 北港溪 - panoramio.jpg〉〈中原橋 Zhongyuan Bridge - panoramio.jpg〉等）。網站上的版本經過裁切。</li>
+      <li>1999 場景的紀念館、「今天的清流」的稻田：林彥廷攝於 2026 年 11 月 1 日田調。</li>
+      <li>今天的清流廳的派出所、從高處往下看、市集：林彥廷攝於 2026 年 10 月 31 日田調。</li>
+      <li>館內展示的老照片與展板屬館方授權使用，本網站不收錄。</li>
+    </ul>
+    <h2>字型</h2>
+    <p>Noto Serif TC、Noto Sans TC（SIL Open Font License）。</p>
+    <h2>本網站</h2>
+    <p>國立雲林科技大學「社造創生專論」課程原型（2026）。製作：林彥廷、鄭少軒；指導：黃世輝老師。</p>
+  </div>
+</section>
+
+<script>
+/* ================= 資料 ================= */
+const LAYERS=["1931","1937","1950","1999","今天"];
+const GAP=.42, BASEY=.08;
+const SRC1="資料：村上優（2018）臺大人類學系碩士論文";
+const PANEL="館內展板（清流社區發展協會、原住民族委員會製作）";
+const MX0_=-80,MY0_=200,MS_=650;   // 地圖中心（紀念館西方 80 公尺、南方 200 公尺）與半寬 650 公尺；2026-11-16 起只呈現清流部落一帶
+const SITES=[
+  {id:"A",name:"紀念碑之地",x:(0-MX0_)/MS_,z:-(0-MY0_)/MS_,ready:true,nodes:{
+    "1937":{t:"部落最高處的神社",sum:"遷到川中島六年後，日本警察在部落最高處蓋了一座神社。",img:"img/past_1.jpg",cr:"AI 輔助繪製示意插畫，非史實影像",snd:"snd/A_1937.mp3",
+      src:SRC1+" p.53–54、72、79–81；"+PANEL+"〈川中島祠〉",
+      hs:[[64,45,"川中島社祠","1937 年 12 月 25 日竣工，祭祀天照大神等神祇，每年 10 月 28 日舉行祭典，由能高神社的神職人員兼任。",PANEL+"〈川中島祠〉"],
+          [31,64,"石燈籠","社祠前的石燈籠。1950 年拆祠立碑時留了下來，到今天仍立在紀念碑兩側。",PANEL+"〈清流部落餘生紀念碑〉"],
+          [42,40,"參拜","每年 10 月 28 日的臺灣神社祭和元旦早上，全部落都要到這裡參拜。","村上優 2018 p.72"],
+          [20,66,"改名","1939 年起，族人戶籍上的名字陸續改成日本姓名。","村上優 2018 p.53–54"]],
+      p:["1937 年，日本警察在部落的最高處蓋了一座神社，叫做「川中島社祠」，當年 12 月 25 日完工。從這裡可以看見整個部落。",
+         "興建社祠時，部落青年團的團長高永清（Pihu Walis）也表示贊同。他是事件中倖存下來、在日本教育下被視為「模範」的青年。",
+         "每年 10 月 28 日的臺灣神社祭，還有元旦的早上，全部落的人都要到這裡參拜。",
+         "同一個時期，族人被要求學日語、改種水稻。1939 年起，戶籍上的族名也陸續改成了日本姓名。"]},
+    "1950":{t:"刻上「餘生」兩個字",sum:"戰後神社拆除，原址立起「餘生紀念碑」。",img:"img/past_1950.jpg",cr:"AI 輔助繪製示意插畫，非史實影像",snd:"snd/A_1950.mp3",
+      src:SRC1+" p.16–17；國家文化記憶庫〈清流部落餘生紀念館空間造景〉；"+PANEL+"〈國民政府治理下的山地政策〉",
+      hs:[[55,57,"餘生紀念碑","1950 年 5 月 6 日，在社祠原址立起紀念碑，碑上用中文刻著「餘生」。立碑的日子，和 1931 年族人被遷來是同一天。","村上優 2018 p.16–17；國家文化記憶庫"],
+          [37,54,"留下的石燈籠","社祠的兩座石燈籠沒有拆，到今天仍立在碑的兩側。",PANEL+"〈清流部落餘生紀念碑〉"],
+          [50,77,"社祠的石台","戰後臺灣各地的日本神社陸續被拆除，這裡的社祠也拆了，碑就立在原來的位置。","村上優 2018 p.16–17"],
+          [27,60,"立碑的人","主導拆祠立碑的是首任仁愛鄉長高永清（Pihu Walis），他本身也是霧社事件的倖存者。","村上優 2018 p.16–17、81"],
+          [10,64,"清流","1946 年 4 月 1 日成立仁愛鄉；1950 年改屬南投縣，川中島改名「清流」，劃入互助村。族人一直稱這裡 Gluban。","館內展板〈國民政府治理下的山地政策〉；郭明正〈川中島─清流部落的歷史沿革〉"]],
+      p:["戰後，臺灣各地的日本神社陸續被拆除。1950 年，部落最高處的這座神社也拆了。",
+         "拆除這座社祠的，正是 1937 年曾贊同興建它的高永清，這時他已是首任仁愛鄉長。他在社祠的原址立起紀念碑，用剛學會的中文，刻上「餘生」兩個字。",
+         "立碑的日子是 5 月 6 日，和 1931 年族人被遷來是同一天。同一年，仁愛鄉改屬南投縣，川中島改名「清流」，劃入互助村。",
+         "神社的兩座石燈籠沒有拆，和紀念碑一起留在原地。「餘生」指的是活下來的人；這座台地上的部落，後來也被稱為「餘生部落」。",
+         "1986 年，南投縣政府把這裡闢為園地，加上大型碑座與記述事件始末的碑文。"]},
+    "1999":{t:"碑旁多了一座館",sum:"九二一地震後紀念碑重建，旁邊蓋了餘生紀念館。",img:"img/f_3903.jpg",cr:"照片：今天的餘生紀念館（攝影：林彥廷，2026-11-01）",snd:"snd/A_1999.mp3",
+      src:SRC1+" p.17；"+PANEL+"〈921 地震災後重建與社區營造〉〈清流部落餘生紀念館〉",
+      hs:[[52,38,"餘生紀念館","九二一地震後，仁愛鄉公所改建紀念碑，並在旁邊興建紀念館，經文建會與南投縣文化局輔導開館。館內展出事件前的霧社、遷村後的川中島與戰後部落的老照片，附有中文與族語說明。","村上優 2018 p.17；"+PANEL+"〈清流部落餘生紀念館沿革〉"],
+          [30,68,"無障礙坡道","2021 年，一位臺中企業家捐助經費，為紀念館完成無障礙工程。","原文會新聞，2021-05-24"],
+          [84,28,"社區更新","在地震之前，清流部落已在 1990 年間進行過社區更新工程。",PANEL],
+          [74,62,"Ru-Dan","地震後，清流社區發展協會推動重建與賽德克文化復育，成立「茹沍 Ru-Dan 染織工作室」。Ru-Dan 在賽德克語是「老人、前輩」。",PANEL+"〈921 地震災後重建與社區營造〉"]],
+      p:["1999 年 9 月 21 日，九二一大地震重創南投。地震之後，紀念碑重新建造。",
+         "地震後，仁愛鄉公所改建紀念碑，並用災後重建經費在旁邊蓋了「餘生紀念館」。在文建會與南投縣文化局輔導下，館內展出事件前的霧社、遷村後的川中島，以及戰後部落的老照片，旁邊附上中文與族語說明。",
+         "清流社區發展協會也在這時推動重建與賽德克文化復育，成立「茹沍 Ru-Dan 染織工作室」。Ru-Dan 在賽德克語是「老人、前輩」，意思是借重長輩的智慧與經驗，把織布等傳統產業延續下去。",
+         "同一年，作家舞鶴出版小說《餘生》，寫下他在川中島住了一段時間後看見的「餘生」生活。不少外地人，是從這本書第一次認識這個部落。"]},
+    "今天":{t:"同一個位置",sum:"石燈籠還在。元旦早上，族人仍回到這裡。",img:"img/now_1_memorial.jpg",cr:"照片：lienyuan lee，CC BY 3.0，via Wikimedia Commons",snd:"snd/A_today.mp3",
+      src:SRC1+" p.67、72；國家文化記憶庫〈清流部落餘生紀念館空間造景〉；"+PANEL,more:1,
+      hs:[[51,45,"餘生紀念碑","碑上刻著「霧社事件 餘生紀念碑」與「民國三十九年五月六日」。現在的碑是九二一地震後重建的。","國家文化記憶庫；村上優 2018 p.17"],
+          [27,42,"石燈籠","1937 年川中島社祠留下的兩座石燈籠，現在立在碑的兩側。",PANEL+"〈清流部落餘生紀念碑〉"],
+          [30,22,"Awi Silan 的壁畫","2004 年 2 月 20 日完成，畫的是族人的傳統生活：狩獵、織布、舂米、口簧琴，也畫了後來被要求的種稻與牛耕。","國家文化記憶庫"],
+          [50,80,"元旦與 5 月 6 日","每年元旦早上 8 點，族人在碑前集合祭拜祖靈；5 月 6 日迫遷日，族人也會到碑前遙祭祖先。","村上優 2018 p.72；"+PANEL+"〈清流部落餘生紀念碑〉"]],
+      p:["石燈籠還立在碑前。2004 年，藝術家 Awi Silan 在碑的上方畫上族人的生活：狩獵、織布、舂米、吹口簧琴，也畫了後來被要求的種稻與牛耕。",
+         "每年元旦早上 8 點，族人仍會到碑前集合。過去在這裡參拜日本的神，現在改為祭拜祖靈。",
+         "部落裡有些人，到現在還把這裡叫做「神社」。",
+         "從神社、紀念碑到紀念館，九十多年來，是同一塊地。"]}
+  }},
+  /* 駐在所／派出所：清流派出所（Google 地圖 24.0692167N, 120.9532605E）；使用者確認日治時期駐在所就在這個位置 */
+  {id:"M",name:"駐在所／派出所",x:(-82-MX0_)/MS_,z:-(83-MY0_)/MS_,ready:true,nodes:{
+    "1931":{t:"從高處看移住地",sum:"1931 年 5 月 6 日，霧社事件倖存的族人被遷到兩條溪之間的臺地；駐在所就蓋在這片臺地的高處。",img:"img/pd_1931.jpg",cr:"照片：1931 年的川中島移住地，作者不詳，公有領域，via Wikimedia Commons",snd:"snd/M_1931.mp3",
+      src:SRC1+" p.14、37；邱建堂（2010）《日本台湾学会報》12 p.17；北村嘉恵（2010）同刊；郭明正〈川中島─清流部落的歷史沿革〉",
+      hs:[[80,80,"先住帳篷","剛遷來的時候，族人先在移住地上搭起帳篷暫住。這張照片的原說明寫著：「保護蕃のマイバラ『川中島』に於ける移住地（天幕を張りて假住）」。","Wikimedia Commons 公有領域照片原說明（1931）"],
+          [12,30,"從高處俯看","這張照片從高處俯看移住地。當年駐在所就蓋在高處，四周圍著垣牆，警察就近監看族人；駐在所的位置，就是今天的清流派出所。","村上優 2018 p.43；"+PANEL+"；Wikimedia Commons 公有領域照片"],
+          [27,84,"278 人","5 月 6 日，倖存者中除了病人之外的 278 人，在約 150 名日本警察押送下，經眉溪、埔里遷到這裡。","村上優 2018 p.14、37–38"],
+          [44,52,"三條溪","北港溪、阿比斯溪、眉原溪在臺地上排成「川」字，日本人因此把這裡叫做「川中島」。","郭明正〈川中島─清流部落的歷史沿革〉"],
+          [58,62,"水田","遷入三天後分配水田，每人約 210 坪。族人不熟悉水田耕作，由駐在所職員發給農具、直接指導；1932 年的報紙說這裡的稻米一年可以兩穫。","村上優 2018 p.41、68–69"],
+          [30,22,"原本的主人","這片臺地原是泰雅族眉原群的傳統領域，日本人把它編為官有地，1921 年起有漢人來開墾，形成小型客家聚落。族人剛遷來時，眉原部落的長輩曾送來生活所需。",PANEL+"〈清流部落餘生紀念館沿革〉"]],
+      p:["1930 年霧社事件之後，倖存的族人被集中收容。1931 年 4 月，收容所再度遭到襲擊，又有 216 人遇害。",
+         "同年 5 月 6 日，剩下的 298 人當中，除了病人之外的 278 人，在日本警察押送下，被遷到北港溪與眉原溪之間的這座台地。日本人把這裡叫做「川中島」。",
+         "這張照片從高處俯看剛搭好的移住地，臺地上是一排排帳篷，許多族人剛到時先住在帳篷裡。駐在所就蓋在高處，四周圍著垣牆；那個位置，就是今天的清流派出所。",
+         "他們來自六個部落：Mhebu、Gungu、Suku、Bwaarung、Truwan、Drodux。",
+         "遷來的那年 10 月，部落裡又有男子被捕，隔年 3 月在埔里郊外遇害。人數有兩種記載：邱建堂的研究記為 23 人（15 到 55 歲），高永清的回憶錄記為 32 人。"]},
+    "今天":{t:"從派出所往下看",sum:"日治時期的駐在所，就在今天清流派出所的位置；從門口可以看到部落沿坡排開。",img:"img/f_3895.jpg",cr:"照片：在清流派出所門口往下看部落（攝影：林彥廷，2026-10-31）",snd:"snd/M_today.mp3",
+      src:"資料："+PANEL+"〈清流部落〉；田調紀錄（2026-10-31，駐在所位置）；郭明正〈川中島─清流部落的歷史沿革〉；OpenStreetMap",more:1,
+      p:["這張照片是在清流派出所門口往下拍的。日治時期的駐在所，就在這個位置。",
+         "當年搭帳篷的臺地，今天是清流部落的住家與街道，沿著坡地一路往下排開。",
+         "Google 地圖上，清流派出所標示為「併至中原派出所」（現況待查證）。",
+         "戰後，川中島改名「清流」。約 2014 年，設籍的有 499 人，其中 470 人是餘生者的後代。"],
+      hs:[[50,20,"遠方的山","包圍谷地的山。1931 年，族人就是被遷到這片被溪與山圍住的臺地。","郭明正〈川中島─清流部落的歷史沿革〉"],
+          [62,72,"沿坡排開的家","房子沿著臺地的坡度一路往下排開，遠處是包圍谷地的山。","田調照片（2026-10-31）"],
+          [80,45,"499 人","約 2014 年，設籍清流的有 499 人，其中 470 人是餘生者的後代；另有不少族人在外地工作生活。","郭明正〈川中島─清流部落的歷史沿革〉"]]}
+  }},
+  /* 高砂義勇隊訓練地：今清流活動中心（Google 24.0691334N, 120.9534018E）的下坡一帶，往南約 25 公尺，約略。
+     旁邊：清流文健站在活動中心北側（24.0693016N, 120.9534002E），清流派出所在西側。 */
+  {id:"T",name:"訓練地",x:(-70-MX0_)/MS_,z:-(118-MY0_)/MS_,ready:true,nodes:{
+    "1937":{t:"寫下血書的 33 人",sum:"太平洋戰爭期間，川中島有 33 名青年加入「高砂義勇隊」。",img:"img/past_train.jpg",cr:"AI 輔助繪製示意插畫，非史實影像",snd:"snd/T_1937.mp3",
+      src:"資料："+PANEL+"〈高砂義勇隊〉〈皇民化運動〉；田調紀錄（2026-10-31，訓練地位置）",
+      p:["太平洋戰爭爆發後，日本把臺灣當成往南方作戰的基地，各地成立青年學校、青年訓練所，接著組成「高砂義勇隊」送往前線。",
+         "在日本警察的鼓動下，川中島的餘生者當中，前後有 33 名青年寫下血書，加入高砂義勇隊。",
+         "20 人被派往南洋，其中 12 人戰死，只有 8 人回到家鄉；13 人被派往花蓮、臺東一帶協防，全數平安歸來。",
+         "他們的父母，是在霧社事件中與日本作戰的一代。"],
+      hs:[[60,62,"33 人","川中島前後有 33 名青年寫下血書，加入高砂義勇隊。",PANEL+"〈高砂義勇隊〉"],
+          [86,74,"南洋","20 人被派往新幾內亞、所羅門群島等南洋前線，其中 12 人戰死，8 人返鄉。",PANEL+"〈高砂義勇隊〉"],
+          [14,76,"花蓮港","13 人被派往花蓮、臺東一帶協防，全數平安歸來。",PANEL+"〈高砂義勇隊〉"],
+          [30,26,"坡地","訓練的坡地在今天清流活動中心一帶與它的下坡。活動中心北邊是文健站，西邊緊鄰派出所，三者相鄰（位置依導覽說明，約略）。","田調紀錄（2026-10-31）；Google 地圖"]]},
+    "今天":{t:"從坡下往上看",sum:"從當年受訓的坡地往上看，是今天活動中心的背面。",img:"img/f_3893.jpg",cr:"照片：從坡下往上看清流活動中心的背面（攝影：林彥廷，2026-10-31）",snd:"snd/T_today.mp3",
+      src:"資料："+PANEL+"〈921 地震災後重建與社區營造〉；田調紀錄（2026-10-31）；Google 地圖（2026 年 11 月查詢）",more:1,
+      p:["這張照片是站在活動中心下方的坡地往上拍，看到的是活動中心的背面。活動中心的正面朝向另一側，前面是一片大廣場，部落的集會和活動在那裡舉行。",
+         "當年川中島的青年，大約就在這一帶的坡地受訓，然後被送往南洋。",
+         "九二一地震後，清流社區活動中心重新建造。"],
+      hs:[[72,30,"活動中心的背面","活動中心的正面朝向另一側，前面有一片大廣場。九二一地震後重建。",PANEL+"〈921 地震災後重建與社區營造〉；Google 地圖"],
+          [78,88,"當年的坡地","高砂義勇隊的青年，當年就在活動中心下方這片坡地受訓。","田調紀錄（2026-10-31）"]]}
+  }},
+  /* 市集：依使用者提供的 Google 街景點（24.06846N, 120.95327E）向西北約 20 公尺，約略 */
+  {id:"K",name:"市集",x:(-86-MX0_)/MS_,z:-(159-MY0_)/MS_,ready:true,nodes:{
+    "今天":{t:"市集",sum:"畫著賽德克菱形紋的平房，是部落辦市集的地方。",img:"img/f_3896.jpg",cr:"照片：林彥廷攝於 2026-10-31",snd:"snd/K_today.mp3",
+      src:"資料："+PANEL+"〈921 地震災後重建與社區營造〉；田調紀錄（2026-10-31）",more:1,
+      p:["這座畫著賽德克菱形紋的平房，是部落辦市集的地方。",
+         "九二一地震後，部落推動民宿、生態旅遊與部落導覽，也成立了「茹沍 Ru-Dan 染織工作室」，把織布等傳統工藝帶進觀光與體驗。"],
+      hs:[[66,66,"菱形紋","牆上畫著賽德克的菱形紋。","田調照片（2026-10-31）"],
+          [24,40,"Ru-Dan","Ru-Dan 在賽德克語是「老人、前輩」。地震後成立的茹沍 Ru-Dan 染織工作室，借重長輩的經驗延續織布工藝，也開設編織體驗。",PANEL+"〈921 地震災後重建與社區營造〉"]]}
+  }},
+  /* 清流梅園：依 Wikimedia Commons 照片拍攝點（24.06761N, 120.95333E），約略 */
+  {id:"P",name:"清流梅園",x:(-75-MX0_)/MS_,z:-(261-MY0_)/MS_,ready:true,nodes:{
+    "今天":{t:"梅園與「三酸」",sum:"冬天開滿白花的梅園；青梅、檸檬、楊梅合稱「三酸」。",img:"img/c_plum.jpg",cr:"照片：lienyuan lee，CC BY 3.0，via Wikimedia Commons",snd:"snd/P_today.mp3",
+      src:"資料：中時新聞網 2019-06-14；原視新聞 2022-12-14；"+PANEL,more:1,
+      p:["部落裡的梅園，冬天開滿白花。",
+         "青梅、檸檬、楊梅是互助村與新生村的主要果樹，產期相接，合稱「三酸」，由仁愛鄉果樹生產合作社加工成梅醋、檸檬醋、煙燻烏梅等產品。",
+         "九二一地震後，部落也辦過賞梅、採梅的體驗活動。"],
+      hs:[[42,28,"梅樹","冬天開花的梅樹。青梅是「三酸」之一。","中時新聞網 2019-06-14"],
+          [70,70,"三酸","青梅、檸檬、楊梅產期相接，合稱「三酸」，加工成梅醋、檸檬醋、煙燻烏梅。","中時新聞網 2019-06-14；原視新聞 2022-12-14"],
+          [88,42,"賞梅採梅","社區曾推出賞梅、採梅等部落體驗活動。",PANEL+"（約 2000 年代，現況待查證）"]]}
+  }},
+  /* 部落入口：依 Wikimedia Commons 照片拍攝點（24.066838N, 120.953204E），約略 */
+  {id:"E",name:"部落入口",x:(-88-MX0_)/MS_,z:-(346-MY0_)/MS_,ready:true,nodes:{
+    "今天":{t:"寫著「川中島」的木牌",sum:"沿著清風路走進部落，路旁的木牌上還寫著「川中島」。",img:"img/c_gluban.jpg",cr:"照片：lienyuan lee，CC BY 3.0，via Wikimedia Commons",snd:"snd/E_today.mp3",
+      src:"資料：郭明正〈川中島─清流部落的歷史沿革〉；"+PANEL+"〈國民政府治理下的山地政策〉",more:1,
+      p:["沿著清風路走進部落，路旁一塊木牌上寫著「川中島」，旁邊的小字是「仁愛鄉互助村」。",
+         "「川中島」是 1931 年日本人取的名字：北港溪、阿比斯溪、眉原溪在這片臺地上排成「川」字。1950 年，這裡改名「清流」。族人一直叫這裡 Gluban。",
+         "三個名字，到今天都還在用。"],
+      hs:[[42,48,"川中島","日本人因為三條溪在臺地上排成「川」字，把這裡叫做「川中島」。","郭明正〈川中島─清流部落的歷史沿革〉"],
+          [56,46,"互助村","1950 年仁愛鄉改屬南投縣，川中島改名「清流」，劃入互助村。",PANEL+"〈國民政府治理下的山地政策〉"],
+          [82,44,"清風路","穿過部落的清風路。沿著它往北走，就到了部落的住家與紀念碑。","OpenStreetMap"]]}
+  }},
+  /* 水田：位置依使用者提供的 Google 街景點（24.0664N, 120.9536E，紀念館南方約 400 公尺），衛星影像可見臺地南側大片稻田 */
+  {id:"B",name:"水田",x:(-48-MX0_)/MS_,z:-(395-MY0_)/MS_,ready:true,nodes:{
+    "1931":{t:"分到水田",sum:"遷來三天後，每人分到約 210 坪水田。",img:"img/past_3.jpg",cr:"AI 輔助繪製示意插畫，非史實影像",snd:"snd/B_1931.mp3",
+      src:SRC1+" p.41、68–69；國家文化記憶庫",
+      p:["遷到川中島三天後，每個人分到約 210 坪的水田。",
+         "族人過去不熟悉水田耕作，駐在所的職員發給農具，直接下田指導。",
+         "1932 年的報紙寫道，這裡的稻米一年可以兩穫。",
+         "多年後，紀念碑上方的壁畫裡，也畫下了族人被要求改種稻、用牛犁田的日子。"],
+      hs:[[24,57,"學種水稻","族人過去不熟悉水田，駐在所職員發給農具、直接指導耕作。","村上優 2018 p.68–69"],
+          [70,70,"210 坪","遷入三天後，每人分到約 210 坪的水田。","村上優 2018 p.41"],
+          [58,86,"一年兩穫","1932 年的報紙說，這裡的稻米一年可以收成兩次。","村上優 2018 p.68–69"]]},
+    "今天":{t:"川中米",sum:"同一片臺地，現在是「川中米」的產地。",img:"img/f_3900.jpg",cr:"照片：林彥廷攝於 2026-11-01，部落附近的稻田",snd:"snd/B_today.mp3",
+      src:"資料：農業部農業知識入口網；今周刊 2025-11-27；工商時報 2025-11-24",more:1,
+      p:["清流所在的北港溪上游谷地，現在是「川中米」的產地，主要品種是台梗 9 號。",
+         "臺中區農業改良場輔導、仁愛鄉農會籌組稻米產銷班，並實施生產履歷。",
+         "近年推動友善栽培：用紙蓆插秧抑草、以微生物製劑取代化學農藥。生態調查記錄到蝶類 46 種、鳥類 68 種，還有保育類的食蟹獴。",
+         "這是清流部落的第一塊友善栽培田。"],
+      hs:[[50,66,"台梗 9 號","川中米主要的品種是台梗 9 號，以米倉造型的環保禮盒包裝。","農業部農業知識入口網"],
+          [62,42,"友善栽培","農業部生物多樣性研究所執行、臺中區農業改良場技術指導，用紙蓆插秧抑草、生物性堆肥與猛禽棲架。","今周刊 2025-11-27；工商時報 2025-11-24"]]}
+  }},
+];
+const TRIBES=["Mhebu","Gungu","Suku","Bwaarung","Truwan","Drodux"];   // 展板 P03、P06：遷到川中島的六個部落
+function wave(x0,z0,x1,z1,n,amp,seed){const a=[];for(let i=0;i<=n;i++){const t=i/n;a.push([x0+(x1-x0)*t+Math.sin(t*9+seed)*amp*.4,z0+(z1-z0)*t+Math.sin(t*7+seed*2)*amp]);}return a;}
+/* 地理資料：© OpenStreetMap contributors（ODbL）。2026-11-15 由 OSM API 與 Nominatim 擷取、簡化。
+   原點＝霧社事件餘生紀念館（120.95407E, 24.06997N）；x 向東、y 向南。
+   ADM：公里；LOCAL：單位 5 公尺。 */
+const ADM={
+tw:[-93,108,-93,113,-91,112,-82,120,-81,118,-81,120,-79,121,-79,122,-80,122,-81,122,-79,125,-76,139,-76,140,-75,140,-70,151,-70,154,-72,156,-71,160,-67,161,-67,163,-65,162,-66,164,-68,161,-67,164,-66,164,-64,167,-62,168,-61,169,-65,168,-66,169,-65,171,-67,169,-65,172,-64,171,-64,170,-63,170,-63,170,-64,171,-63,170,-57,176,-52,177,-53,178,-51,180,-38,188,-32,195,-31,201,-27,206,-24,217,-27,226,-24,231,-25,236,-22,238,-21,234,-19,233,-13,236,-9,240,-11,234,-11,231,-8,229,-6,225,-7,220,-5,217,-7,214,-6,213,-6,193,2,168,6,163,8,155,23,145,23,142,25,141,24,135,26,133,28,133,30,131,33,124,37,120,41,108,47,105,45,103,46,100,45,96,47,93,48,87,52,83,53,75,57,64,56,61,58,54,61,39,63,35,63,30,66,21,66,12,68,10,69,11,70,7,68,3,67,-2,72,-7,72,-14,80,-21,82,-26,82,-25,83,-26,86,-40,88,-43,92,-45,90,-49,94,-51,93,-55,95,-59,92,-60,90,-65,88,-77,89,-85,95,-96,107,-104,104,-106,101,-105,99,-106,99,-110,98,-112,99,-117,88,-116,88,-117,88,-117,88,-118,89,-118,89,-118,87,-118,87,-119,83,-120,80,-117,81,-120,77,-121,77,-122,75,-123,76,-127,73,-125,71,-129,69,-129,68,-133,63,-136,61,-135,59,-136,51,-130,47,-124,44,-122,40,-121,45,-121,43,-119,39,-117,35,-117,35,-118,34,-118,35,-117,29,-116,11,-108,9,-106,6,-102,6,-100,-4,-86,-5,-75,-9,-72,-13,-66,-18,-65,-20,-60,-23,-59,-29,-46,-37,-37,-41,-28,-42,-28,-41,-26,-44,-27,-45,-25,-48,-25,-45,-23,-50,-16,-47,-15,-50,-10,-53,-10,-55,-6,-59,-3,-55,-3,-54,-6,-53,-6,-52,-7,-50,-10,-52,-7,-53,-2,-56,2,-59,3,-61,9,-63,9,-68,22,-71,23,-69,27,-72,26,-72,28,-74,26,-74,28,-80,29,-78,30,-80,34,-77,34,-79,35,-80,40,-78,41,-82,46,-83,50,-81,61,-85,61,-84,64,-81,64,-83,68,-80,69,-82,70,-80,75,-81,75,-81,78,-83,80,-82,78,-84,78,-83,77,-84,77,-85,80,-84,83,-85,82,-87,86,-88,92,-87,88,-85,88,-84,88,-86,89,-87,92,-86,94,-88,94,-89,92,-90,102,-93,108],
+nt:[-34.5,25.5,-33.5,25,-32.5,26,-33.5,26.5,-32,26,-32.5,27,-31,28.5,-28,27.5,-27.5,29.5,-32,31.5,-30.5,37,-32,37.5,-31,43,-33,48,-32.5,50,-31.5,48.5,-30,51,-27.5,51,-24,48.5,-22.5,51,-20.5,50.5,-16,52.5,-14,52,-13,53.5,-15,59,-12,66,-7.5,66.5,-4.5,65.5,2.5,66.5,5.5,67,6,70,10,68.5,10.5,67.5,8.5,66,11.5,61,18.5,61.5,20,60,19.5,57,21,55.5,20.5,53.5,23,54,24.5,52,25.5,52.5,27.5,49.5,29,38,28,37.5,28.5,35.5,25.5,34,25.5,33,28,31,27.5,29.5,29,25.5,30.5,22.5,31.5,22,31,18.5,32.5,17.5,33,11.5,31,8.5,33.5,3.5,33.5,1.5,37.5,-1.5,38,-5,33.5,-7.5,33,-9.5,34,-9.5,34,-12,40,-14.5,39.5,-17,35.5,-18.5,33,-17.5,31.5,-19.5,29,-16.5,27,-17.5,23,-15.5,21.5,-17,18.5,-14,15,-14,10,-9.5,8.5,-10,8,-8.5,6.5,-10,3.5,-5.5,-0.5,-6.5,-3.5,-4,-6.5,-5,-6.5,-3,-7.5,-1.5,-7.5,-4.5,-11,-6,-12.5,-3.5,-12.5,0,-15,0.5,-18.5,6.5,-21,8,-22.5,6.5,-25,7,-28,6,-28.5,7,-32,7,-32,8.5,-31,9.5,-31.5,12.5,-33,12.5,-32,15,-33,15.5,-32,16,-33,17.5,-32.5,19,-34,22.5,-33,23.5,-34.5,25.5],
+ra:[-1.6,-0.4,-0.4,0.8,-1,0.8,-1,2.2,0.4,2.8,1.8,4.4,2.8,4.2,3.8,5.6,5,5.4,5.6,7.6,7.4,7.2,9.6,8,10.4,7.2,11.8,9.6,10,11,10.4,11.6,9.2,14,7.8,14,6.4,11.2,4.8,11.4,5.2,13.6,6.2,13.8,4.4,15.4,5.2,16,6.4,15.2,5.6,16.2,5.6,18,4.8,16.2,2.8,16.6,3.8,19.2,3.6,20.4,2.6,20.6,4.2,23.4,4,25.4,5.2,27,10.8,28.8,14.4,28.2,16,27.4,16.2,26.2,19.8,24.4,20.4,22.6,26,25,27,25.8,27.2,27.6,28.6,27.8,30.4,22.4,31.6,21.8,31.8,19,31.2,18.4,32.8,17.6,32.2,13.4,33,11.6,32.4,10.4,31.6,10.4,31.2,8.6,33.8,3.4,33.4,1.8,37.6,-1.6,37,-2.8,38,-4.6,33.2,-7.2,33.6,-9,33.2,-9.8,34,-9.6,33.8,-11.8,35.8,-12.2,37.8,-14,40.2,-14.4,40.2,-15.6,39.6,-17,38.2,-17.8,35.2,-18.4,34.4,-17.6,33.2,-17.6,31.6,-19.4,30.6,-19.2,28.8,-16.6,27,-17.6,23.2,-15.8,21.8,-17.2,21,-16,19.6,-15.8,18.6,-14,15,-13.8,13.2,-11.8,10,-9.4,8.6,-9.8,8,-8.6,7.4,-10,6.6,-9.8,3.6,-5.4,2.2,-5.2,0.4,-6,-1.2,-2.8,-0.8,-1.2,-1.6,-0.4]
+};
+const LOCAL={
+"river|北港溪":[[320,10,290,10,268,15,262,26,261,40,264,52,263,64,253,73,242,78,222,83,210,91,184,120,171,136,160,142,149,144,108,124],[108,124,97,122,82,112,72,107,66,108,62,112,60,120,58,127,41,139,21,148,15,150],[15,150,-9,153,-54,154,-95,138,-121,123,-148,99,-168,87,-179,85,-201,82,-224,96,-230,111,-233,121,-246,143,-271,158,-311,149,-337,151],[108,124,82,126,60,135,35,152,15,150],[330,-31,319,-26,310,-22,293,-14,281,-4,273,8,268,15]],
+"river|眉原溪":[[-17,-357,0,-313,-10,-288,-14,-274,-12,-260,-7,-249,-10,-242,-9,-231,-13,-220,-16,-206,-24,-201,-25,-193,-18,-185,-21,-169,-22,-162,-28,-156,-31,-141,-41,-124,-39,-113,-43,-101,-46,-94,-55,-87,-60,-78,-70,-64,-77,-49,-87,-28,-92,-14,-101,-1,-113,5,-120,10,-128,19,-129,32,-127,47,-123,56,-123,62,-125,71,-135,79,-148,99]],
+"river|五票坑":[[42,322,41,316,38,313,32,316,29,311,25,309,23,300,16,297,11,299,9,305,7,309,2,312,-5,310,-12,306,-17,308,-18,314,-23,316,-25,303,-28,296,-36,293,-40,298,-37,304,-40,311,-48,312,-54,317,-59,320,-66,313,-71,314,-78,324],[-107,321,-108,316,-115,306,-114,297,-116,293,-132,291,-135,287,-136,276,-139,267,-146,255,-156,250,-157,245,-157,239,-152,232,-151,224,-158,217,-168,214,-171,210,-170,199,-170,192,-183,182,-198,179,-208,180,-215,182,-225,180,-229,175,-228,166,-232,153,-236,150,-246,143]],
+"stream|":[[-182,-2,-167,9,-166,17,-167,26,-167,38,-161,49,-158,57,-163,62,-161,68,-161,73,-179,85],[-96,-136,-87,-136,-78,-132,-53,-131,-50,-133],[-88,-159,-84,-149,-78,-146,-65,-145,-57,-141,-50,-133,-41,-124],[77,-299,67,-288,59,-285,51,-285],[62,-324,57,-314,56,-302,54,-292,51,-285,38,-273,29,-271,23,-268,21,-264,10,-257,-3,-246,-10,-242],[325,218,293,198,282,186,272,155,269,149,247,111,240,112,232,117,224,118,220,116,211,113,184,120],[186,220,189,215,190,211,180,195,174,194,169,187,170,174,169,164,174,159,171,154,172,150,175,145,170,142,160,142],[-239,-55,-233,-52,-226,-45,-222,-42,-216,-37,-211,-29,-205,-20,-199,-15,-192,-9,-188,-6,-182,-2],[-318,-8,-312,-2,-307,2,-304,8,-302,15,-301,22,-301,28,-297,33,-290,45,-282,60,-279,64,-273,69,-266,70,-260,73,-253,79,-254,87,-239,107,-230,111],[95,-130,92,-128,85,-121,80,-114,71,-108,66,-105,48,-97,34,-91,28,-86,27,-72,27,-65,25,-61,16,-62,12,-58,12,-50,16,-46,23,-39,23,-31,20,-18,17,-13,13,-8,11,6,8,21,-3,41,-6,47,-12,58,-19,65,-27,75,-33,82,-41,87,-49,88,-53,91,-55,96,-57,103,-65,111,-94,130,-95,138],[-295,261,-297,251,-302,247,-310,246,-315,244,-321,242],[278,-215,277,-209,276,-205,272,-198,270,-193,269,-183,271,-174,270,-157,267,-154,266,-144,265,-135,267,-129,273,-119,281,-112,288,-105,296,-98,300,-92,304,-83,308,-78,308,-71,308,-64,313,-57,324,-49]],
+"road|北原路":[[-325,236,-315,225,-308,222,-300,221,-286,219,-278,217,-270,216,-266,214,-233,189,-229,186,-224,182],[-321,101,-314,98,-304,94,-293,89,-286,86,-273,81,-268,78,-264,75,-259,71]],
+"road|中華路":[[-224,182,-220,180,-213,174,-209,169,-202,163,-196,159,-192,156,-180,154,-170,155,-163,157,-158,162,-143,164,-120,164,-94,162,-88,161,-81,161,-71,162,-58,164,-50,165,-44,165,-37,164,-29,166,-23,168,-19,169,-2,164,1,163,8,162,13,162,21,163,32,162,37,161,45,155,60,149,70,146,79,144,106,143,121,145,135,147,142,149,146,151,153,157,160,159,164,160,180,167,188,171,198,170,207,169,212,168,227,166,238,153,242,147,248,142,253,140,259,138,271,131,277,128,283,125,291,123,297,122,304,122,309,123,316,122,326,119]],
+"road|清風路":[[1,163,1,160,-2,146,-3,140,-4,138,-13,137,-19,134,-19,126,-18,96,-18,87,-18,80,-18,75,-17,58,-16,27,-16,24]],
+"road|":[[227,166,242,162,253,158,278,150,290,146,298,144,304,140,309,138,320,135],[271,131,274,139,278,150,281,157,283,162,285,168],[294,158,290,146,283,125],[-209,169,-205,172,-197,176,-182,180,-170,190,-167,193,-165,199,-157,209,-154,215,-150,220,-146,229,-144,234,-144,243,-143,248,-143,253,-142,257,-137,262,-134,270,-131,276,-127,280,-122,284,-119,287,-119,293,-118,299,-124,304,-124,310,-121,315,-117,318,-115,320],[-311,35,-307,43,-306,47,-303,53,-300,59,-297,64,-295,67,-291,75,-286,86],[29,38,29,32,31,25,33,21,38,17,42,14],[18,5,28,8,36,11,42,14,48,18,49,23],[-232,159,-238,160,-246,161,-247,161],[-229,156,-232,159]],
+"resid|":[[-29,-11,-42,-7,-36,14,-39,22,-39,27,-33,30,-24,32,-25,43,-32,42,-36,53,-14,56,1,32,41,40,40,34,30,28,34,18,47,24,51,14,42,9,22,3,5,-2,-29,-11],[-320,76,-312,73,-307,82,-316,86,-320,76]],
+"water|":[[-242,37,-239,39,-236,46,-241,50,-249,51,-259,55,-264,56,-274,59,-279,54,-273,48,-268,47,-262,44,-251,39,-242,37]],
+"cem|清流第三公墓":[[82,36,79,42,76,49,85,55,95,45,82,36]],
+"poi|霧社事件餘生紀念館":[[2,1,-1,-3,-3,-2,-2,1,2,2,2,1]],
+"poi|清流派出所":[[-15,14,-15,17,-19,17,-19,15,-15,14]],
+"poi|互助國小":[[330,133,308,140,313,156,335,150]],
+"bldg|":[[-319,77,-315,76,-314,79,-318,80,-319,77],[-199,43,-196,41,-194,45,-191,43,-189,47,-194,49,-196,46,-197,47,-199,43],[-204,13,-195,10,-192,8,-184,6,-182,6,-182,8,-183,10,-185,10,-192,11,-194,11,-200,13,-203,15,-204,13],[-205,7,-190,1,-189,3,-191,5,-195,5,-204,9,-205,7],[-229,31,-219,28,-219,31,-228,33,-229,31],[-202,27,-195,25,-194,27,-201,29,-202,27],[-201,29,-194,27,-194,29,-201,31,-201,29],[-203,33,-196,33,-196,34,-203,35,-203,33],[-167,25,-162,26,-161,27,-160,32,-167,32,-167,25],[-264,211,-265,210,-260,206,-259,207,-264,211],[-295,222,-295,226,-296,227,-297,223,-295,222],[-314,116,-314,113,-312,113,-311,115,-314,116],[-4,10,-4,13,-7,13,-7,10,-4,10],[1,9,0,9,0,7,1,7,1,9],[6,8,5,9,1,9,1,7,6,8],[12,16,14,16,13,18,11,18,12,16],[16,13,18,14,17,16,15,15,16,13],[20,12,23,12,21,18,19,17,20,12],[18,12,19,11,20,11,19,13,18,12],[17,9,19,10,19,11,18,12,16,12,17,9],[25,12,24,12,25,9,26,9,25,12],[23,12,25,13,24,15,22,15,23,12],[26,9,29,10,29,13,27,12,27,13,25,13,26,9],[22,8,25,8,24,11,22,10,22,8],[33,13,33,14,32,15,30,14,31,12,33,13],[36,15,37,13,39,15,39,16,36,15],[36,13,37,13,36,15,35,14,36,13],[35,14,33,13,34,12,36,13,35,14],[33,14,33,13,35,14,34,15,33,14],[24,34,28,35,27,37,24,36,24,34],[25,32,28,33,28,35,24,34,25,32],[26,30,28,30,28,33,26,32,26,30],[27,24,29,25,29,27,26,26,27,24],[28,21,31,21,30,24,27,23,28,21],[25,22,25,20,28,20,27,22,25,22],[22,19,24,20,24,22,21,21,22,19],[18,18,21,18,20,21,18,20,18,18],[17,20,14,19,15,17,18,18,17,20],[13,21,14,19,17,20,16,22,13,21],[13,26,13,24,16,24,15,26,13,26],[12,29,12,27,15,28,14,30,12,29],[7,29,7,27,9,28,9,29,7,29],[3,43,5,43,5,46,3,45,3,43],[-8,42,-6,42,-7,44,-8,44,-8,42],[-9,40,-9,38,-6,39,-6,41,-9,40],[-7,34,-7,32,-3,32,-3,35,-7,34],[-11,28,-11,26,-7,26,-7,28,-11,28],[-6,23,-5,21,-2,22,-2,24,-6,23],[-259,69,-258,68,-257,70,-256,72,-258,73,-258,71,-259,69],[301,151,301,149,296,150,297,152,301,151]]
+};
+const PLACES=[["中原",1959,296],["清流",-64,83]];
+const MARK={wushe:[18.1,5.4],puli:[1.5,11.4]};
+
+/* ---- 真實地圖：OSM 現況（1 地圖單位 = 1 公里；GS 個 5 公尺單位） ---- */
+const GS=300, FZ=-1;   // FZ：資料的 y 向南，地圖的 z 要反過來，才不會變成鏡像
+function clipSeg(p,q){let t0=0,t1=1;const dx=q[0]-p[0],dz=q[1]-p[1];for(const [pp,qq] of [[-dx,p[0]+1],[dx,1-p[0]],[-dz,p[1]+1],[dz,1-p[1]]]){if(pp===0){if(qq<0)return null;}else{const r=qq/pp;if(pp<0){if(r>t1)return null;if(r>t0)t0=r;}else{if(r<t0)return null;if(r<t1)t1=r;}}}return [[p[0]+t0*dx,p[1]+t0*dz],[p[0]+t1*dx,p[1]+t1*dz]];}
+/* ---- 記憶地層的地圖：OSM 現況（10 公尺單位，原點＝餘生紀念館，y 向南）----
+   地圖中心放在紀念館東方 800 公尺、半寬 1300 公尺（2026-11-16 由 1750 縮小），讓北港溪對岸的中原部落也在範圍內 */
+const MX0=MX0_, MY0=MY0_, MS=MS_;   // 2026-11-16 縮小：只保留部落與中原一帶，周邊沒有內容的山區不畫
+function mapXY(xm,ym){return [(xm-MX0)/MS, FZ*(ym-MY0)/MS];}
+const OSM2={"road":[[211,-4,214,-6,218,-5,220,-4,226,-1],[-133,107,-116,94,-115,93,-112,91],[114,83,121,81,126,79,139,75,145,73,149,72,152,70,154,69,160,67,163,65,166,62,168,59,171,58,176,56,177,54],[-110,90,-107,87,-104,85,-101,81,-98,79,-96,78,-93,77,-90,77,-85,77,-82,78,-79,81,-77,82,-72,82,-60,82,-47,81,-44,81,-40,81,-36,81],[-112,91,-110,90],[177,54,179,53,182,50,185,46,188,44,190,43,193,41,195,40,197,38,200,36,202,34,205,30,209,25,213,20,215,18,217,14,218,11,219,9,218,7,215,5,212,4,210,3,208,2,207,0,208,-2],[208,-2,211,-4],[136,66,137,69,139,75,140,78,141,81,142,84],[147,79,145,73,142,62],[163,65,166,67,168,74],[208,-16,203,-23,200,-29],[225,-70,219,-64,217,-63,214,-63,208,-59,204,-57,202,-56,194,-50,190,-47,188,-46],[200,-29,198,-34,196,-38,194,-40,193,-41,190,-43,188,-46,184,-50,184,-53,183,-55,181,-58,180,-61,179,-62,175,-62,174,-60,170,-60,168,-55],[213,-5,208,-9,207,-12,208,-14,208,-16],[-2,69,-4,68,-7,68,-9,68,-10,66,-10,63,-9,48,-9,44,-9,40,-9,38],[-36,81,-29,82,-25,82,-22,83,-18,82,-14,83],[23,78,30,74,35,73,40,72,53,72,61,72],[1,82,4,81,7,81,11,81,16,81,18,80,23,78],[61,72,67,74,71,75,73,76,77,78,80,80,82,80,90,84,94,85,99,85,104,84,106,84,114,83,119,77,121,74,124,71,127,70,129,69,131,68,136,66,139,64,142,62,145,61,148,61,152,61,155,62,158,61,163,60,165,59,169,57,177,54],[1,82,1,80],[1,80,-1,73,-1,70,-2,69],[-14,83,-12,84,-9,84,-1,82,1,82],[-9,38,-9,29,-8,14,-8,12],[-116,80,-119,80,-123,80,-123,81],[-114,78,-116,80],[1,80,4,81],[219,9,222,5,226,6],[14,19,15,17,16,12,17,10,19,9,21,7],[9,3,14,4,18,5,21,7,23,8,24,10,25,12],[-104,85,-103,86,-102,88,-98,88,-91,90,-85,95,-84,96,-82,99,-78,105,-77,108,-75,110,-73,114,-72,117,-72,122,-72,124,-72,126,-71,129,-69,131,-67,135,-65,138,-64,140,-61,142,-60,144],[-59,146,-59,150,-62,152,-62,155,-60,158,-58,159,-57,161,-58,163,-61,164,-62,167,-60,168],[-60,144,-59,146]],"river":[[226,-42,221,-30,214,-22,207,-17,205,-15,196,-8,183,-1,176,3,168,7,160,5,145,5,134,8,131,13,131,20,132,26,131,32,127,37,121,39,111,41,105,46,92,60,86,68,80,71,74,72,54,62],[24,176,25,174,28,169,28,166,21,162,21,158,19,156,16,158,14,155,12,155,11,153,11,150,10,149,8,149,5,149,4,152,3,154,1,156,-3,155,-6,153,-9,154,-9,157,-12,158,-12,152,-14,148,-18,147,-20,149,-18,152,-20,156,-24,156,-26,157,-28,160,-31,159,-33,157,-36,157,-39,162,-44,165,-48,166,-51,167,-53,166,-54,164,-53,160,-54,158,-58,153,-57,148,-58,146,-66,145,-68,143,-68,138,-69,133,-73,128,-78,125,-78,122,-78,119,-76,116,-75,112,-79,109,-84,107,-85,105,-85,100,-85,96,-91,91,-99,89,-104,90,-108,91,-113,90,-115,87,-114,83,-116,76,-118,75,-123,71],[54,62,48,61,41,56,36,53,33,54,31,56,30,60,29,63,20,70,11,74,8,75],[8,75,-4,77,-27,77,-48,69,-61,62,-74,49,-84,43,-90,43,-100,41,-112,48,-115,55,-117,60,-123,71,-136,79],[54,62,41,63,30,68,17,76,8,75],[205,-15,201,-16,192,-17,187,-18,181,-19,177,-20,166,-16,159,-13,155,-11,146,-7,140,-2,136,4,134,8]],"bldg":[[151,75,150,74,148,75,148,76,151,75],[1,1,0,-2,-1,-1,-1,0,1,1,1,1],[-7,7,-7,8,-9,8,-9,7,-7,7],[-99,21,-98,21,-97,22,-96,22,-95,23,-97,25,-98,23,-99,23,-99,21],[-102,7,-102,6,-102,6,-97,5,-98,4,-97,4,-96,4,-96,4,-96,4,-92,3,-92,3,-91,3,-91,4,-92,4,-91,5,-92,5,-92,5,-94,5,-94,5,-96,5,-96,6,-97,6,-97,6,-100,7,-100,7,-101,8,-102,7,-102,7,-102,7],[-102,4,-95,0,-95,1,-95,1,-94,2,-95,2,-96,2,-96,2,-96,2,-97,2,-97,2,-102,4,-102,4],[-97,2,-97,4,-96,4,-97,2,-97,2],[-114,15,-110,14,-109,16,-114,17,-114,15],[-101,13,-97,12,-97,13,-101,14,-101,13],[-101,14,-97,13,-97,14,-100,15,-101,14],[-102,17,-98,16,-98,17,-101,17,-102,17],[-83,12,-81,13,-81,14,-80,16,-83,16,-83,12],[191,37,192,37,193,39,193,39,192,40,191,37],[-2,5,-2,7,-3,7,-3,5,-2,5],[1,4,0,4,0,4,1,4,1,4],[3,4,3,5,0,5,1,4,1,4,3,4],[6,8,7,8,7,9,6,9,6,8],[8,7,9,7,9,8,8,8,8,7],[10,6,11,6,10,9,9,8,10,6],[9,6,9,5,10,6,10,6,9,6],[9,5,10,5,9,5,9,6,8,6,9,5],[13,6,12,6,12,4,13,5,13,6],[11,6,12,6,12,8,11,7,11,6],[13,5,15,5,14,6,14,6,14,6,13,6,13,5],[11,4,12,4,12,5,11,5,11,4],[17,7,16,7,16,8,15,7,15,6,17,7],[18,7,18,7,20,7,19,8,18,7],[18,6,18,7,18,7,17,7,18,6],[17,7,17,7,17,6,18,6,17,7],[16,7,17,7,17,7,17,8,16,7],[12,17,14,18,14,18,12,18,12,17],[12,16,14,17,14,18,12,17,12,16],[13,15,14,15,14,16,13,16,13,15],[14,12,15,12,14,14,13,13,14,12],[14,10,15,11,15,12,14,12,14,10],[12,11,13,10,14,10,14,11,12,11],[11,10,12,10,12,11,11,11,11,10],[9,9,10,9,10,10,9,10,9,9],[8,10,7,10,8,9,9,9,8,10],[7,11,7,10,8,10,8,11,7,11],[6,13,7,12,8,12,8,13,6,13],[6,15,6,14,7,14,7,15,6,15],[3,14,4,14,5,14,4,15,3,14],[2,21,3,22,3,23,1,23,2,21],[-4,21,-3,21,-3,22,-4,22,-4,21],[-5,20,-4,19,-3,20,-3,21,-5,20],[-4,17,-4,16,-1,16,-1,17,-4,17],[-5,14,-5,13,-4,13,-4,14,-5,14],[-3,12,-3,10,-1,11,-1,12,-3,12]],"stream":[[-8,-179,0,-156,-5,-144,-7,-137,-6,-130,-4,-125,-5,-121,-4,-116,-6,-110,-8,-103,-12,-100,-12,-96,-9,-93,-10,-85,-11,-81,-14,-78,-16,-71,-20,-62,-19,-56,-21,-51,-23,-47,-27,-44,-30,-39,-35,-32,-39,-25,-44,-14,-46,-7,-50,-1,-56,3,-60,5,-64,10,-64,16,-63,24,-61,28,-62,31,-63,36,-67,40,-74,49],[-91,-1,-83,5,-83,9,-84,13,-84,19,-81,24,-79,29,-82,31,-80,34,-81,36,-90,43],[-48,-68,-44,-68,-39,-66,-26,-66,-25,-66],[-44,-79,-42,-74,-39,-73,-32,-72,-29,-70,-25,-66,-20,-62],[38,-150,33,-144,29,-142,26,-142],[53,-172,42,-171,37,-169,34,-167,31,-162,28,-157,28,-151,27,-146,26,-142,19,-136,15,-136,11,-134,11,-132,5,-129,-2,-123,-5,-121],[227,2,213,-2,206,-5,200,-6,196,-8],[165,111,163,109,147,99,141,93,136,77,135,74,123,56,120,56,116,59,112,59,110,58,106,57,92,60],[93,110,95,108,90,98,87,97,84,94,85,87,84,82,87,80,86,77,86,75,88,73,85,71,80,71],[-60,175,-57,169,-53,166],[-120,-27,-116,-26,-113,-23,-111,-21,-108,-19,-105,-14,-102,-10,-99,-8,-96,-4,-94,-3,-91,-1],[-127,46,-120,53,-115,55],[48,-65,46,-64,43,-61,40,-57,35,-54,33,-53,24,-48,17,-45,14,-43,13,-36,14,-33,12,-31,8,-31,6,-29,6,-25,8,-23,12,-20,11,-16,10,-9,8,-7,6,-4,6,3,4,10,-1,20,-3,23,-6,29,-10,33,-14,37,-17,41,-21,44,-24,44,-26,45,-28,48,-28,51,-32,56,-47,65,-48,69],[139,-107,138,-104,138,-102,136,-99,135,-97,134,-91,136,-87,135,-79,133,-77,133,-72,133,-67,133,-64,137,-60,140,-56,144,-53,148,-49,150,-46,152,-41,154,-39,154,-35,154,-32,157,-28,162,-25,164,-21,165,-16],[174,-96,176,-91,177,-89,175,-88,173,-86,174,-84,177,-82,180,-78,180,-75,180,-73,183,-70,186,-66,190,-63,193,-57,198,-49,201,-44,213,-34,221,-30],[197,-88,200,-81,202,-76,204,-70,206,-68,210,-64,214,-61,219,-56,221,-51,229,-45]],"water":[[-121,18,-120,20,-118,23,-120,25,-125,26,-130,28],[-125,20,-121,18]],"resid":[[207,4,206,6,201,13,189,18,190,26,182,31,175,46,179,47,193,40,205,29,216,19,221,22,224,17,221,10,223,3,207,4],[-15,-6,-21,-3,-18,7,-20,11,-19,14,-16,15,-12,16,-12,22,-16,21,-18,26,-7,28,1,16,21,20,20,17,15,14,17,9,24,12,25,7,21,5,11,2,2,-1,-15,-6]]};
+function toMap(arr,q){const out=[];let cur=null;for(let i=0;i+3<arr.length;i+=2){const c=clipSeg(mapXY(arr[i]*q,arr[i+1]*q),mapXY(arr[i+2]*q,arr[i+3]*q));if(!c){cur=null;continue;}if(cur&&Math.hypot(cur[cur.length-1][0]-c[0][0],cur[cur.length-1][1]-c[0][1])<1e-6){cur.push(c[1]);}else{cur=[c[0],c[1]];out.push(cur);}}return out;}
+const BASE=[],EXTRA={"今天":[]};
+for(const [k,list] of Object.entries(OSM2)) for(const arr of list) for(const pts of toMap(arr,10)){
+  if(k==='river')BASE.push({k:'river',w:2.4,pts});
+  else if(k==='stream'||k==='water')BASE.push({k:'stream',w:.9,pts});
+  else if(k==='road')EXTRA["今天"].push({k:'road',w:1.1,pts});
+  else if(k==='bldg')EXTRA["今天"].push({k:'bldg',w:.9,pts});
+  else EXTRA["今天"].push({k:'terrace',w:.9,dash:true,pts});}
+/* 地形：AWS Terrain Tiles（terrarium，整合 SRTM 等公開高程）2026-11-15 取樣；51×51 點、間距 70 公尺；x −1250～2250、y −1750～1750 公尺 */
+const DEMS="9m9ralbscvczckcfbrb4ad9q977h5i4q4g4f4m6i7z897u7c7n8a898r9ha9b2checfgg5gigoh5hsj1kglalsman5n9m9kqjcini8909safbkbwcac4c3bbam9u9c91755f4n4d4b4b5u7l7l6x6o707h8b8w9gabapc9daeig1gvh2hghxihjqkikslamamal3j6i9h5gu8z9na2b8blbtc1bvava59f8u7u6k5i4i4845486z776s686h747w8w9ta9anb8c0d3dnf8gphhhti9iiizjgk0kplclkk6iwhsg5er9la7albcbrchc7bnaga0987t6u5z594g49414o5x6y6j5q6d6k769la5b2b4bgbycudtf1fzhui0i1iliginjdk0kgkojpi7gieud6asbebucickcxclbiana98v776m5s5d4j403x495h6a5z5k5v6q8cb1boc7c3cacqd4dqeefuguhni0ibi6i5irj4jkjqj9hpfpdqcubvcdd0cyd3dkczbvav9w8j7t7a6v6656453v404p505b5m6s7q8wbfcmcod1dfdddpe5ehf2fxgphjhoh5hbhqhwimj1icgdf7dia7didne1dodidwdhc9baag9f8w8b7q6p623s3r3p464p5l6r7p879fb5c3cydqdve4ebeueqeofig1hcgrgagagggghahjgqflfld7b6dmdyecelemeqdicobjatae9h8s8a774z3n3o3n404u6l748k8u8xb3bvd0dtegeqezeme6epfmghh1gifef8fmfdf7fadbcpd2bvawcpcudme3ebe9decrc9bkaj9m928n78413o3m3j3u4e5n7e8o9hacb1bjdedserf8erdudweufwgrgofgeveie9dec4bgagb6bcao9gbrc9cxdgdgdddhcxc7bka9928f7l6h3x3m3h3h3v4c556t8v9uaiaec0dbdyemeqe3d8dvf3g4fyfsesdrd6crax9l93929xa09b8narbdc6c9c5chd2cmayag9l8i7o6p533y3e3e3h3v4k5i6i7z9k9zahb3bydhehebdicsdrewf3dtd1dvddcmbf8a7y84868y877r7oa6awb7b9bfc4cobaa5968h7x74674e3o3d383g3s455t6u888v99a0awb5cce2eadjcvdddqd8bdb9ccbtar887k6r7371716p604y9ra3a4amb9c4ccaya7967y756p5h3x3c35363d3r475p74868o8m9na1asbudtefducrcscsar9fa6b0a39g7o6065695o554y4j3u9b9da0agb1bhc2b5a2907i6x5s543z3031333a3l4q5k6r7l867y8r9waxckdbe4e0cvccck9l8s989e8y7j6t5u5i5b4c3w3s3b3d8w96999tacb7b8ab9l8o7j6w4u4o3h2u2u313c3n4v5o6l7j7w7e82a0aycadadfdacvbubp8v8d8b807k6p5y4d4a423h3a38302y828i8x9ka4ac9r99918k7w6c4e3r332r2r313e3j4z5z6m7e7k748d99abbybzc0bsbqbibl8i7l7d785o4q493m3r3e3834302r2s767v8h8v999185818085815m4f3m2w2o2t323b3n4o5v6l6n6o6v7z919vb2b3axawb9bjak7l786d5t4b3v3h3c3e3734312w2p2l6c7c82828i877k6z727a7g4l3n2w2m2i2r343a4b5g5v5y5y6a7c8qa5aoakanb7bsccbc9788685b4c413j3b343432312v2s2o2h5z6w707f7q7q706d6g6t6f4c312g2j2k2t343a4f55545y6k727m8laaafahbcc1cicnb19e85664n433p3k38322u2t2u2n2n2g2b5i606b6f79716h65666f5k3r2h2e2g2n2u303h494k5o666x747e89a0ajbdbwcpcycc9w8e795t433o3f3g342t2t2p2o2m2k282953585l627c6r5p5m5i5w4z392c282g2m2v2x3g404b535l6e6s7a9laeb8bscecpcgaw8x7i6n5f3x3h39322p2j2l2l2k2k2f22254q4h4o636f64564j534t4f2e28262f2p2x3b3t3k3z4v666w858q989yaaavbebfbja27o6t5o4u3o36312l2c2b262a2a282827275k4k3z4r514u4g423m443f2523252h2y3t4p4e3i4n5a607e8b8q8r8ua09t9vaka7907j644y3v342y2n2b222422212525252a2c655c3z3d3k3a3b33373e2f211y272g333u4c463v45575x747p7p776w7w7y8n9h9a8h6x6044392t2b21211z202120232c2j2e2n4y4s4537322u2s2r2o2k221v22252i2o3c3n3l3s3r4u5h6c646m6h5n6g84898m8d7m6j583u2s1z1y1w2121201y212e2h2n2s2w3v3p3c302p2m2m2i2h291q1t1z282e2h2n2u2t2p3b3u4h4u4z5i5n5e637c878h7o705r4f2z261y211w1x1y23292d2l2m2m2q2x2v2s2h2i2i2g2e2h2f1s1s1t1y292a2f2p2h2i2j2l2t3c3v434h4g4t5l6n7e817u766m412h1u1x201x27232a2g2h2n2o2v2z362a282829282a2d2f251n1p1s1y27292c2f2d2g2h2k2k2o2x3c3j3g3z555w6y78796x6d3w2i1u1v20292c2b2e2j2l2p2u2y343621212626252427241y1l1n1q1u2427282a2c2d2d2g2i2i2q2t2x333d4b5y695z65695n4b2m1s1z292c2g2f2j2o2r2s2v3338361v1w1x1t1v1v1x1u1t1j1j1p1z2124252824282728292d2e2m2o2q333o5g5t5l5w5c4g3g2b1r232c2e2h2h2i2l2s2s2v373c3g1o1e1h1a1b1g1i1r1r1j1l1n1x1y202120242626242528272e2j2h2t424l4y534v402z2e1w1z262d2f2h2j2m2q2s2q353a3i3s1d1314121211121d1d191f1n1x1x1z1z2123212425222723272c2d2d2q3m3y3u3f2c1v1t272b2c2f2d2g2f2k2q2v333c3e3p4g1b1110141719181818181f1l1q1q1u1z2022242325221w1u1y22232d2a2p2s2k2b1o1z282b2b2c2h2j2i2h2m2y37383f3l49571f1211161b1a191715191b1f1i1l1p1w1x21202024201s1m1r1w21272121221x1x1v252d2d2e2f2i2l2n2m2y373a3f3e445d6115100z1415171d1e1d17191c1e1i1k1o1v231x1x1w1v1m1p1n1p1p1o1y1z1t1p23282c2h2e2i2q2p2p2w373e3j3l3s484z63770w1017151a171f1g1g1f1e191a1c1h1j1n1s1k1f1h1c1l1q1n1s1x1q1u1p1p1u2d2g2j2n2n2u2y303a3e3m3x434f4w5g60748315181a1e1c1g1i1e1k1j1j1h1f1d1c1c1h1e1d1b181n282y2y4i3u3i382927292e2k2k2n30393b3f3h3k3u4a4u5b676x748i8t1h1e1h1n1s2o2p291y1q1u1z2f2b2k2m1y241y2f2f2w3h4v586w6h5a3v2s2k2k2q2o2r30343n3r3s3x4f4s5o5w6d728798a89s1i1n1n1w242i3b3p3m2z313k4b53584u3k383l3j4045546l7476684s423a2s2x2v2w36373o3x42495a646x7b6z7j8j9kaqal9j1j1t26343k322j3g494u4u5l626k665b4o4g4j4y535s707x856y5u54524m3f3c3a3m3z444k57534x5u77808t8g8q9lazbna9901o2a35414j3m2p313z4u5l6j6x726u615b5a5q6d6v727o8q927o6h6a655h5340474s505e5t6i6c585v6r89979rakbac2c4ae8y232y3l4d524e382u3w4u5j656v7k7d6q6j6i7g7t868g939o9n8i7c7d7a6n5s4s4z5k6f7e7r8o8h7c6n717v96aabvczd4cob0a42y3x4o545j4l3g2v3q4t5i5j5x76858a8k8q969f9j9sa2aha0958s908k7g6g5q5j6q7v929pa99u927h7e889tbucgdoe2djcmba4k525u6563593w2y3c4d4o4i5d6v7y8i8m8a8z959d9h9v9xa09ua5a69g8f7c666i7x8sb7bibkb49o8l8o8zaabzcodte4docwc85p6e6v766i5s4k3n3e3s464y5b6g7b7c7c7z8e888f8k958w9jabasb9aq9d827d7h8ya9bkd5ccbkaoa39ra2b2ccdcdrdvdld1ck6f717t7v6y60574p3x3c41535v5v63646c6w736z7c8e8i89999uanbmb1a79m8s8u9lb4djejebdtc1b7anb2byd4dse1e6dxdbci6a72868l7d6h5v5c4e3i414x5j5d5i555e5s5y636r7o7q7p8e959ub3bpblax9o9tatcwegfgfsfhe0coc4c0cgdie6efepe7dhci617f8r9a8m7m6p564k3w3q4k524t4q4r4z585e5q616s6w7g81909matcmcsc6b8bmcheoflfifdflfiefd6d5djdwebeqeddtd3cf6r7m8o9t97856x5l4z473x3v4b4j585q6b6j716x6q666k7h8k93agbjcacnd2dbdsf0fhfdeoelf7fpf5ele8ebefeee5decqcbbr8m8q9ja89o896r60584h40464t5r6e75808n7x777f756i7f8i9jaearb5bzcpdfe1ejeoehdsduegewfff6ekeadvdpdcc4bfb2au9z9wa5aqa88p7h685q4u4i53606o7i8x958q7p7z887a6b778f949pa1axbpc5ciczdpe0dld7d3dje8f0ewdpd6clcqc9b1a89w9j";
+const DEM=[];for(let i=0;i<DEMS.length;i+=2)DEM.push(parseInt(DEMS.substr(i,2),36)+340);
+const HK=1.1/MS;   // 高度誇張約 1.1 倍（地圖縮到 1.2 公里後，2.2 倍會太陡）
+function Hn(x,z){const xm=x*MS+MX0,ym=FZ*z*MS+MY0,gx=(xm+1250)/70,gz=(ym+1750)/70;if(gx<0||gz<0||gx>50||gz>50)return 0;const i=Math.min(49,Math.floor(gx)),j=Math.min(49,Math.floor(gz)),ax=gx-i,az=gz-j;
+  const e=DEM[j*51+i]*(1-ax)*(1-az)+DEM[j*51+i+1]*ax*(1-az)+DEM[(j+1)*51+i]*(1-ax)*az+DEM[(j+1)*51+i+1]*ax*az;return (e-442)*HK;}
+/* 地圖上的文字（公尺座標）。河名依郭明正〈川中島─清流部落的歷史沿革〉；阿比斯溪對應的支流為 Claude 依其描述判讀 */
+const RIVERLBL=[["北港溪",-480,700],["北港溪",320,620],["眉原溪 Yayung Mbgala",-430,-400],["阿比斯溪 Ruru Abis",250,-400]];
+const ZH=[["中原社",2050,420]],ZH2=[["中原",2050,420]];
+const LBL={"1931":[["川中島社",220,240]],"1937":[["川中島社",220,240],...ZH],"1950":[["清流",220,240],...ZH2],"1999":[["清流",220,240],...ZH2],
+  "今天":[["清流部落 Alang Gluban",300,460],["餘生紀念館",-170,-140],["中原部落 Alang Nakahara",2060,430],["互助國小",1620,820],["眉冷山",-997,-1236],["松樹山",958,-396]]};
+/* ================= 聲音 =================
+   底噪：瀏覽器合成的柔和白噪音（可聽見的中頻）。
+   場景環境音：放在 snd/ 的音檔（尚待取得免費素材或田野錄音）；
+   每段第一次播放從隨機位置開始，之後依「虛擬時間」接續，就像那個場景的時間一直在走。 */
+const SND={ctx:null,on:true,master:null,bed:null,players:{},epoch:{},cur:null,
+  init(){
+    if(this.ctx) return; const A=window.AudioContext||window.webkitAudioContext; if(!A) return;
+    const c=this.ctx=new A(); this.master=c.createGain(); this.master.gain.value=1; this.master.connect(c.destination);
+    const len=c.sampleRate*4,b=c.createBuffer(2,len,c.sampleRate);
+    for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);let b0=0,b1=0,b2=0;for(let i=0;i<len;i++){const w=Math.random()*2-1;b0=.997*b0+w*.029;b1=.985*b1+w*.032;b2=.95*b2+w*.048;d[i]=(b0+b1+b2+w*.05)*.4;}}
+    const s=c.createBufferSource();s.buffer=b;s.loop=true;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=520;const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=90;
+    const g=c.createGain();g.gain.value=0;const ng=c.createGain();ng.gain.value=.55;s.connect(hp).connect(lp).connect(ng).connect(g);
+    [100,200,300].forEach((f,i)=>{const o=c.createOscillator();o.frequency.value=f;const og=c.createGain();og.gain.value=[.05,.03,.012][i];o.connect(og).connect(g);o.start();});
+    g.connect(this.master);s.start();g.gain.linearRampToValueAtTime(.05,c.currentTime+3);this.bed=g;
+  },
+  bedTo(v,sec){if(!this.bed)return;const t=this.ctx.currentTime;this.bed.gain.cancelScheduledValues(t);this.bed.gain.setValueAtTime(this.bed.gain.value,t);this.bed.gain.linearRampToValueAtTime(v,t+sec);},
+  tick(){if(!this.ctx||!this.on)return;const c=this.ctx,o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.frequency.setValueAtTime(1600,t);o.frequency.exponentialRampToValueAtTime(900,t+.06);
+    g.gain.setValueAtTime(.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+.08);o.connect(g).connect(this.master);o.start(t);o.stop(t+.09);},
+  playScene(src){
+    if(!src) return; this.stopScene(true);
+    let a=this.players[src]; if(!a){a=new Audio();a.src=src;a.loop=true;a.preload='auto';a.volume=0;a.addEventListener('error',()=>{a.dataset.bad=1;});this.players[src]=a;}
+    if(a.dataset.bad) return; this.cur=a;
+    const start=()=>{const D=a.duration||60; if(this.epoch[src]===undefined) this.epoch[src]=performance.now()-Math.random()*D*1000;
+      try{a.currentTime=((performance.now()-this.epoch[src])/1000)%D;}catch(e){}
+      a.play().catch(()=>{}); this.fade(a,this.on?.85:0,1800);};
+    a.readyState>=1?start():a.addEventListener('loadedmetadata',start,{once:true});
+  },
+  stopScene(){const a=this.cur;if(!a)return;this.fade(a,0,900,()=>a.pause());this.cur=null;},
+  fade(a,to,ms,done){const from=a.volume,s=performance.now();(function st(){const k=Math.min(1,(performance.now()-s)/ms);a.volume=from+(to-from)*k;k<1?requestAnimationFrame(st):done&&done();})();},
+  toggle(){this.init();this.on=!this.on;if(this.ctx){const t=this.ctx.currentTime;this.master.gain.cancelScheduledValues(t);this.master.gain.linearRampToValueAtTime(this.on?1:0,t+.3);}if(this.cur)this.cur.volume=this.on?.85:0;}
+};
+
+/* ================= 畫布與相機 ================= */
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');let W,H,DPR,MOB;
+function resize(){W=innerWidth;H=innerHeight;MOB=W<640;DPR=MOB?Math.min(1.25,devicePixelRatio||1):Math.min(2,devicePixelRatio||1);cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+  document.getElementById('hint').innerHTML=MOB?'單指：繞著展台走　兩指：縮放、移動<br>點光點看介紹':'拖曳：繞著展台走　・　滾輪：縮放　・　右鍵或 Shift＋拖曳：移動畫面　・　↑↓：換年代<br>點光點看介紹　・　地圖為現今河道與道路（© OpenStreetMap 貢獻者）';}
+addEventListener('resize',resize);resize();
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MID=BASEY+(LAYERS.length-1)*GAP/2;
+const OVER=()=>({ty:MID,tx:0,tz:0,d:MOB?5.4:6.1,pitch:.36});
+const cam={yaw:.7,pitch:.1,d:10,ty:.4,tx:0,tz:0,fov:50};
+const camGoal={};
+let basis;
+function setup(){
+  const cp=Math.cos(cam.pitch),px=cam.tx+cam.d*cp*Math.sin(cam.yaw),py=cam.ty+cam.d*Math.sin(cam.pitch),pz=cam.tz+cam.d*cp*Math.cos(cam.yaw);
+  let fx=cam.tx-px,fy=cam.ty-py,fz=cam.tz-pz;const fl=Math.hypot(fx,fy,fz);fx/=fl;fy/=fl;fz/=fl;
+  let rx=fz,ry=0,rz=-fx;const rl=Math.hypot(rx,rz)||1;rx/=rl;rz/=rl;
+  const ux=ry*fz-rz*fy,uy=rz*fx-rx*fz,uz=rx*fy-ry*fx;
+  const f=(Math.min(W,H*1.6)/2)/Math.tan(cam.fov*Math.PI/360);
+  basis={px,py,pz,fx,fy,fz,rx,ry,rz,ux:-ux,uy:-uy,uz:-uz,f};
+}
+const RW=()=>(document.getElementById('ruler').offsetWidth||100)+24;
+const CX=()=>(W-RW())/2+(MOB?4:20), CY=()=>H*(MOB?.46:.47);
+function P(x,y,z){const b=basis,vx=x-b.px,vy=y-b.py,vz=z-b.pz,zc=vx*b.fx+vy*b.fy+vz*b.fz;if(zc<.06)return null;
+  return [CX()+b.f*(vx*b.rx+vy*b.ry+vz*b.rz)/zc, CY()-b.f*(vx*b.ux+vy*b.uy+vz*b.uz)/zc, zc];}
+let curT=0;
+function line(pts,y){ctx.beginPath();let s=false,prev=null;
+  const put=(x,z)=>{const p=P(x,y+(curT?curT*Hn(x,z):0),z);if(!p){s=false;return;}s?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]);s=true;};
+  for(const [x,z] of pts){if(curT&&prev){const d=Math.hypot(x-prev[0],z-prev[1]);const n=Math.floor(d/(MOB?.1:.05));for(let k=1;k<n;k++)put(prev[0]+(x-prev[0])*k/n,prev[1]+(z-prev[1])*k/n);}put(x,z);prev=[x,z];}ctx.stroke();}
+function line3(pts){ctx.beginPath();let s=false;for(const [x,y,z] of pts){const p=P(x,y,z);if(!p){s=false;continue;}s?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]);s=true;}ctx.stroke();}
+function poly3(pts,fill){const q=pts.map(([x,y,z])=>P(x,y,z));if(q.some(p=>!p))return false;ctx.beginPath();q.forEach((p,k)=>k?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=fill;ctx.fill();return q;}
+const circ=(r,n=64,ox=0,oz=0)=>Array.from({length:n+1},(_,k)=>{const a=k/n*Math.PI*2;return [ox+Math.cos(a)*r,oz+Math.sin(a)*r];});
+
+/* ================= 狀態 ================= */
+let focus=-1, sel=null, hover=null, mode="gate", t0=performance.now(), idle=0;
+const yOff=LAYERS.map(()=>0), yAlpha=LAYERS.map(()=>1), tf=LAYERS.map(()=>0);
+const layerY=i=>BASEY+i*GAP+yOff[i];
+function ease3(o){for(const k in o) camGoal[k]=o[k];}
+function goOverview(){focus=-1;closeCard();ease3(OVER());syncRuler();SND.tick();}
+function goLayer(i){focus=Math.max(0,Math.min(LAYERS.length-1,i));closeCard();ease3({ty:BASEY+focus*GAP+.12,tx:0,tz:0,d:MOB?4.4:3.7,pitch:.62});syncRuler();SND.tick();}
+function focusNode(n){const i=LAYERS.indexOf(n.year);focus=i;sel={site:n.site,year:n.year};ease3({ty:BASEY+i*GAP,tx:n.site.x,tz:n.site.z,d:MOB?2.9:2.5,pitch:.78});syncRuler();SND.tick();openCard(n);}
+const ruler=document.getElementById('ruler');
+(function(){const ov=document.createElement('button');ov.textContent='總覽';ov.className='ov';ov.onclick=goOverview;ruler.appendChild(ov);
+  [...LAYERS].reverse().forEach(k=>{const b=document.createElement('button');const i=LAYERS.indexOf(k);b.textContent=k;b.dataset.i=i;b.onclick=()=>goLayer(i);ruler.appendChild(b);});})();
+function syncRuler(){[...ruler.children].forEach(b=>{const on=b.classList.contains('ov')?focus===-1:+b.dataset.i===focus;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);});}
+
+/* ---------- 資訊框 ---------- */
+const card=document.getElementById('card');
+function openCard(n){const d=n.data||{};sel={site:n.site,year:n.year};
+  document.getElementById('cy').textContent=n.year;document.getElementById('cn').textContent=n.site.name;
+  document.getElementById('ct').textContent=d.t||'';document.getElementById('cp').textContent=d.sum||'';
+  const go=document.getElementById('cgo');go.disabled=!n.site.ready;go.textContent=n.site.ready?'進入這個年代 →':'內容製作中';
+  go.onclick=()=>dive(n);loadImg(d.img);
+  card.classList.remove('on');void card.offsetWidth;card.classList.add('on');}
+function closeCard(){sel=null;card.classList.remove('on');}
+document.getElementById('cx').onclick=()=>{closeCard();SND.tick();};
+function placeCard(){
+  if(!sel||!card.classList.contains('on'))return;
+  const p=P(sel.site.x,layerY(LAYERS.indexOf(sel.year)),sel.site.z);if(!p)return;
+  const cw=card.offsetWidth,ch=card.offsetHeight;let x=p[0]+60,y=p[1]-ch-40;
+  if(x+cw>W-RW())x=p[0]-cw-60; if(x<10)x=10; if(MOB){x=Math.max(10,Math.min(x,W-RW()-cw+8));} if(y<70)y=Math.min(H-ch-60,p[1]+40);
+  card.style.transform=`translate(${Math.round(x)}px,${Math.round(y)}px)`;
+  // 引線
+  const ax=x<p[0]?x+cw:x, ay=Math.max(y+14,Math.min(y+ch-14,p[1]));
+  ctx.globalCompositeOperation='lighter';ctx.strokeStyle='rgba(95,227,255,.7)';ctx.lineWidth=1;ctx.setLineDash([3,4]);
+  ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(ax,ay);ctx.stroke();ctx.setLineDash([]);
+}
+
+/* ================= 互動：繞行、縮放、平移 ================= */
+const tip=document.getElementById('tip'),ptrs=new Map();let mvd=0,panMode=false,pinch0=null;
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('pointerdown',e=>{if(mode!=="map")return;cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});mvd=0;panMode=e.button===2||e.shiftKey;if(ptrs.size===2)pinch0=null;cv.classList.add('drag');idle=0;});
+function pan(dx,dy){const k=cam.d*.0016,b=basis;const gx=b.fx,gz=b.fz,gl=Math.hypot(gx,gz)||1;
+  camGoal.tx=cam.tx=cam.tx-(dx*b.rx)*k+(dy*gx/gl)*k; camGoal.tz=cam.tz=cam.tz-(dx*b.rz)*k+(dy*gz/gl)*k;
+  cam.tx=camGoal.tx=Math.max(-1.6,Math.min(1.6,cam.tx));cam.tz=camGoal.tz=Math.max(-1.6,Math.min(1.6,cam.tz));}
+function zoom(f){camGoal.d=Math.max(.5,Math.min(7,(camGoal.d||cam.d)*f));}
+cv.addEventListener('pointermove',e=>{
+  if(mode!=="map")return;
+  const p=ptrs.get(e.pointerId);
+  if(p){const dx=e.clientX-p.x,dy=e.clientY-p.y;mvd+=Math.abs(dx)+Math.abs(dy);p.x=e.clientX;p.y=e.clientY;
+    if(ptrs.size===2){const [a,b]=[...ptrs.values()];const dist=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      if(pinch0){zoom(pinch0.dist/dist);pan(mx-pinch0.mx,my-pinch0.my);}pinch0={dist,mx,my};}
+    else if(panMode) pan(dx,dy);
+    else{cam.yaw+=dx*.006;camGoal.pitch=cam.pitch=Math.min(1.3,Math.max(.12,cam.pitch+dy*.004));}
+  } else pick(e.clientX,e.clientY,true);
+});
+function up(e){const had=ptrs.has(e.pointerId);ptrs.delete(e.pointerId);if(ptrs.size<2)pinch0=null;if(!ptrs.size)cv.classList.remove('drag');
+  if(had&&mvd<6&&e.type==='pointerup'&&ptrs.size===0){pick(e.clientX,e.clientY,false);}}
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+addEventListener('wheel',e=>{if(mode!=="map")return;e.preventDefault();zoom(Math.exp(e.deltaY*.0012));idle=0;},{passive:false});
+addEventListener('keydown',e=>{
+  if(mode==="scene"&&e.key==='Escape'){document.getElementById('back').click();return;}
+  if(mode!=="map")return;
+  if(e.key==='ArrowUp'){e.preventDefault();focus<0?goLayer(LAYERS.length-1):goLayer(focus+1);}
+  if(e.key==='ArrowDown'){e.preventDefault();focus<0?goLayer(0):goLayer(focus-1);}
+  if(e.key==='Escape')sel?closeCard():goOverview();
+  if(e.key==='+'||e.key==='=')zoom(.85); if(e.key==='-')zoom(1.18);
+});
+let nodeScreen=[],hitBoxes=[],hoverMark=null;
+function pick(mx,my,hoverOnly){
+  hover=null;let best=MOB?28:22;
+  for(const n of nodeScreen){const d=Math.hypot(n.sx-mx,n.sy-my);if(d<best){best=d;hover=n;}}
+  let box=null;hoverMark=null;if(!hover){for(const b of markBoxes){if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){hoverMark=b.m;break;}}
+    if(!hoverMark)for(const b of hitBoxes){if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){box=b;break;}}}
+  cv.classList.toggle('hot',!!(hover||box||hoverMark));
+  if(!hoverOnly&&hoverMark){tip.classList.remove('on');SND.tick();go("today",hoverMark[3]);return;}
+  if(hoverOnly&&hoverMark){tip.textContent=`今天　${hoverMark[0]}　→ 今天的清流廳`;tip.style.left=mx+'px';tip.style.top=my+'px';tip.classList.add('on');return;}
+  if(hoverOnly){if(hover){tip.textContent=`${hover.year}　${hover.site.name}`;tip.style.left=hover.sx+'px';tip.style.top=hover.sy+'px';tip.classList.add('on');}else tip.classList.remove('on');return;}
+  tip.classList.remove('on');
+  if(hover) focusNode(hover); else if(box) goLayer(box.i); else if(sel) closeCard();
+}
+const snd=document.getElementById('snd');
+snd.onclick=()=>{SND.toggle();snd.textContent='聲音　'+(SND.on?'開':'關');snd.setAttribute('aria-pressed',SND.on);};
+
+/* ================= 展廳（半透明的面＝空間；發光線＝投影） ================= */
+const FLOOR=-.62, PED_TOP=-.3, ROOM_R=7.2;
+const dust=Array.from({length:MOB?60:110},()=>({x:(Math.random()*2-1)*1.1,z:(Math.random()*2-1)*1.1,y:Math.random()*2.4,v:.0015+Math.random()*.003,a:Math.random()}));
+function drawHall(t){
+  ctx.globalCompositeOperation='source-over';
+  // 背景：沒有牆，只有遠方的光與霧
+  const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#0a1013');bg.addColorStop(.5,'#151a1b');bg.addColorStop(1,'#0c0f10');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  // 地平線（遠方地面投影到螢幕上的高度）
+  const fl=Math.hypot(basis.fx,basis.fz)||1;const hz=P(basis.px+basis.fx/fl*40,FLOOR,basis.pz+basis.fz/fl*40);
+  const hy=hz?Math.max(-H*.2,Math.min(H*1.2,hz[1])):H*.45;
+  const fog=ctx.createLinearGradient(0,hy-H*.28,0,hy+H*.18);
+  fog.addColorStop(0,'rgba(120,128,126,0)');fog.addColorStop(.62,'rgba(150,140,122,.13)');fog.addColorStop(.8,'rgba(170,150,120,.10)');fog.addColorStop(1,'rgba(60,58,54,0)');
+  ctx.fillStyle=fog;ctx.fillRect(0,hy-H*.28,W,H*.46);
+  const hz2=ctx.createLinearGradient(0,0,0,H*.45);hz2.addColorStop(0,'rgba(140,130,112,.08)');hz2.addColorStop(1,'rgba(140,130,112,0)');ctx.fillStyle=hz2;ctx.fillRect(0,0,W,H*.45);
+  // 遠方的光（霧中的暖色光源，慢慢呼吸）
+  ctx.globalCompositeOperation='lighter';
+  for(let k=0;k<9;k++){const a=k/9*Math.PI*2+.35,R=7+((k*37)%4);
+    const c=P(Math.cos(a)*R,1.6+((k*13)%7)*.35,Math.sin(a)*R);if(!c)continue;
+    const r=Math.min(W*.5,basis.f*3.2/c[2]);const al=.13+.05*Math.sin(t*.4+k*1.7);
+    const g=ctx.createRadialGradient(c[0],c[1],0,c[0],c[1],r);
+    g.addColorStop(0,`rgba(255,206,150,${al})`);g.addColorStop(.35,`rgba(240,180,130,${al*.45})`);g.addColorStop(1,'rgba(240,180,130,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(c[0],c[1],r,0,Math.PI*2);ctx.fill();}
+  ctx.globalCompositeOperation='source-over';
+  // 地面：只有淡淡的同心圓，越遠越淡，消失在霧裡
+  for(let r=2.2;r<8;r+=.9){ctx.strokeStyle=`rgba(200,180,150,${.07*(1-r/8)})`;ctx.lineWidth=1;line(circ(r,72),FLOOR);}
+  // 地面倒影：投影台下方的暖光與青色光
+  const fc=P(0,FLOOR,0);
+  if(fc){ctx.globalCompositeOperation='lighter';
+    const rr=basis.f*2.6/fc[2];ctx.save();ctx.translate(fc[0],fc[1]);ctx.scale(1,Math.max(.12,Math.abs(Math.sin(cam.pitch))*.9));
+    let g=ctx.createRadialGradient(0,0,0,0,0,rr);g.addColorStop(0,'rgba(255,214,160,.13)');g.addColorStop(.5,'rgba(255,214,160,.05)');g.addColorStop(1,'rgba(255,214,160,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,rr,0,Math.PI*2);ctx.fill();
+    g=ctx.createRadialGradient(0,0,0,0,0,rr*.55);g.addColorStop(0,`rgba(95,227,255,${focus<0?.07:.035})`);g.addColorStop(1,'rgba(95,227,255,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,rr*.55,0,Math.PI*2);ctx.fill();ctx.restore();
+    ctx.globalCompositeOperation='source-over';}
+  // 暖色投射燈：從上方打在投影台上的柔和光束
+  ctx.globalCompositeOperation='lighter';
+  [[-2.4,4.2,-1.6],[2.6,4.2,-.8],[.4,4.4,2.6]].forEach(([x,y,z])=>{const s0=P(x,y,z),s1=P(x*.25,PED_TOP,z*.25);if(!s0||!s1)return;
+    const w=basis.f*.55/s1[2];const g=ctx.createLinearGradient(s0[0],s0[1],s1[0],s1[1]);g.addColorStop(0,'rgba(255,220,170,0)');g.addColorStop(1,'rgba(255,220,170,.03)');
+    const dx=s1[0]-s0[0],dy=s1[1]-s0[1],L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;
+    ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(s0[0]+nx*2,s0[1]+ny*2);ctx.lineTo(s0[0]-nx*2,s0[1]-ny*2);ctx.lineTo(s1[0]-nx*w,s1[1]-ny*w);ctx.lineTo(s1[0]+nx*w,s1[1]+ny*w);ctx.closePath();ctx.fill();});
+  ctx.globalCompositeOperation='source-over';
+  // 投影台（深色實體、暖色邊光）
+  poly3(circ(1.62,64).map(([x,z])=>[x,FLOOR,z]),'rgba(28,26,24,.92)');
+  for(let k=0;k<32;k++){const a0=k/32*Math.PI*2,a1=(k+1)/32*Math.PI*2;const n=Math.cos((a0+a1)/2-Math.atan2(basis.px,basis.pz)+Math.PI/2);if(n<0)continue;
+    poly3([[Math.cos(a0)*1.62,FLOOR,Math.sin(a0)*1.62],[Math.cos(a1)*1.62,FLOOR,Math.sin(a1)*1.62],[Math.cos(a1)*1.5,PED_TOP,Math.sin(a1)*1.5],[Math.cos(a0)*1.5,PED_TOP,Math.sin(a0)*1.5]],`rgba(${40+30*n|0},${36+26*n|0},${32+20*n|0},.95)`);}
+  // 台座側面：六個部落名（面向觀看者的才顯示）
+  {const ay=(FLOOR+PED_TOP)/2;TRIBES.forEach((name,k)=>{const a=k/6*Math.PI*2+.26;const nx=Math.cos(a),nz=Math.sin(a);
+    if((basis.px-nx*1.56)*nx+(basis.pz-nz*1.56)*nz<=0)return;const c=P(nx*1.565,ay,nz*1.565);if(!c)return;
+    const fs=Math.max(9,Math.min(17,basis.f*.085/c[2]));ctx.font=`600 ${fs}px "Noto Serif TC",serif`;ctx.textAlign='center';ctx.fillStyle='rgba(236,212,176,.62)';ctx.fillText(name,c[0],c[1]+fs*.35);ctx.textAlign='start';});}
+  poly3(circ(1.5,64).map(([x,z])=>[x,PED_TOP,z]),'rgba(46,43,39,.6)');
+  ctx.strokeStyle='rgba(230,200,160,.35)';ctx.lineWidth=1.2;line(circ(1.5,64),PED_TOP);
+  ctx.strokeStyle='rgba(230,200,160,.12)';ctx.lineWidth=1;line(circ(1.2,64),PED_TOP);
+  // 台面刻度（可點）
+  LAYERS.forEach((y,i)=>{const a=Math.PI*.12+i*.4;const p=P(Math.cos(a)*1.36,PED_TOP,Math.sin(a)*1.36);if(!p)return;
+    const fs=Math.max(10,Math.min(15,150/p[2]));ctx.font=`600 ${fs}px "Noto Serif TC",serif`;ctx.textAlign='center';
+    ctx.fillStyle=i===focus?'rgba(255,232,195,.98)':'rgba(220,195,160,.6)';ctx.fillText(y,p[0],p[1]+fs*.35);ctx.textAlign='start';
+    const w=ctx.measureText(y).width+10;hitBoxes.push({i,x:p[0]-w/2,y:p[1]-fs*.7,w,h:fs*1.5});});
+  ctx.globalCompositeOperation='lighter';
+  // 發射口、光錐、微塵（光）
+  const em=focus<0?1:.3;ctx.strokeStyle=`rgba(191,244,255,${.9*em})`;ctx.lineWidth=2;ctx.shadowColor='rgba(95,227,255,1)';ctx.shadowBlur=MOB?0:14*em;line(circ(.32,48),PED_TOP+.005);ctx.shadowBlur=0;
+  const topY=layerY(0)-.02;ctx.lineWidth=1;
+  [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([x,z])=>{const p0=P(x*.23,PED_TOP,z*.23),p1=P(x,topY,z);if(!p0||!p1)return;const g=ctx.createLinearGradient(p0[0],p0[1],p1[0],p1[1]);g.addColorStop(0,`rgba(95,227,255,${.45*em})`);g.addColorStop(1,'rgba(95,227,255,.03)');ctx.strokeStyle=g;ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();});
+  const top=layerY(LAYERS.length-1)+.3;
+  for(const d of dust){if(!reduce)d.y+=d.v;if(d.y>top)d.y=PED_TOP;const p=P(d.x,d.y,d.z);if(!p)continue;ctx.fillStyle=`rgba(191,244,255,${(.25+.35*Math.sin(t*2+d.a*6))*.5})`;ctx.fillRect(p[0],p[1],1.4,1.4);}
+}
+
+/* ================= 繪製 ================= */
+function frame(now){
+  // 序廳、紙張展間、穿越後的場景裡看不到展廳，就不畫，省下效能
+  if(mode==="pro"||mode==="room"||mode==="scene"||mode==="hop"){requestAnimationFrame(frame);return;}
+  const LOWFX=mode==="dive"||mode==="back";
+  const t=(now-t0)/1000;
+  if(mode==="map"||mode==="intro"){const k=mode==="intro"?.025:.08;for(const key of ['ty','tx','tz','d','pitch']) if(camGoal[key]!==undefined) cam[key]+=(camGoal[key]-cam[key])*k;}
+  if(mode==="map"&&!ptrs.size&&!reduce){idle+=1/60;if(idle>4&&focus<0&&!sel)cam.yaw+=.0011;}
+  LAYERS.forEach((_,i)=>{const goal=focus<0?0:(i>focus?.55:i<focus?-.55:0);yOff[i]+=(goal-yOff[i])*.08;const ga=focus<0?1:(i===focus?1:.16);yAlpha[i]+=(ga-yAlpha[i])*.08;tf[i]+=((focus===i?1:0)-tf[i])*.06;});
+  setup();hitBoxes=[];markBoxes=[];
+  drawHall(t);
+  ctx.lineJoin='round';ctx.lineCap='round';
+  prevNodes=nodeScreen;nodeScreen=[];
+  LAYERS.forEach((yr,i)=>{
+    const y=layerY(i), flick=reduce?1:(.9+.1*Math.sin(t*3+i*1.7)+(Math.random()<.004?-.5:0)), a=yAlpha[i]*flick;
+    const c=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,z])=>P(x,y,z));
+    if(c.every(Boolean)){ctx.beginPath();c.forEach((p,k)=>k?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=`rgba(40,150,180,${.05*a})`;ctx.fill();ctx.strokeStyle=`rgba(95,227,255,${.55*a})`;ctx.lineWidth=1.2;ctx.stroke();}
+    curT=tf[i]>.01?tf[i]:0;
+    if(curT){ctx.lineWidth=1;for(let g=0;g<=60;g+=(MOB?4:2)){const v=-1+g/30;ctx.strokeStyle=`rgba(95,227,255,${.2*a*curT})`;line([[v,-1],[v,1]],y);line([[-1,v],[1,v]],y);}}
+    else{ctx.strokeStyle=`rgba(95,227,255,${.08*a})`;ctx.lineWidth=1;for(let g=-1;g<=1.001;g+=.25){line([[g,-1],[g,1]],y);line([[-1,g],[1,g]],y);}}
+    for(const f of BASE.concat(EXTRA[yr]||[])){
+      if(f.k==="tents"){ctx.strokeStyle=`rgba(191,244,255,${.8*a})`;ctx.lineWidth=1.2;for(const [x,z] of f.pts){line([[x-.025,z+.02],[x,z-.025],[x+.025,z+.02],[x-.025,z+.02]],y);}continue;}
+      if(f.k==="fields"){ctx.strokeStyle=`rgba(191,244,255,${.45*a})`;ctx.lineWidth=1;for(let q=0;q<4;q++){line([[.38,.1+q*.073],[.62,.1+q*.073]],y);}line(f.pts.concat([f.pts[0]]),y);continue;}
+      ctx.setLineDash(f.dash?[5,6]:[]);
+      ctx.strokeStyle=f.k==="stream"?`rgba(95,227,255,${.32*a})`:f.k==="bldg"?`rgba(191,244,255,${.7*a})`:f.k==="river"?`rgba(120,235,255,${.85*a})`:f.k==="road"?`rgba(191,244,255,${.5*a})`:f.k==="terrace"?`rgba(95,227,255,${.45*a})`:`rgba(95,227,255,${.3*a})`;
+      ctx.lineWidth=f.w||1;
+      if(f.k==="river"&&!MOB&&!LOWFX){const sw=ctx.lineWidth,ss=ctx.strokeStyle;ctx.lineWidth=sw*4;ctx.strokeStyle=`rgba(95,227,255,${.12*a})`;line(f.pts,y);ctx.lineWidth=sw;ctx.strokeStyle=ss;}
+      line(f.pts,y);ctx.setLineDash([]);
+    }
+    if(a>.5&&focus===i){ctx.globalCompositeOperation='source-over';ctx.textAlign='center';
+      for(const [txt,xm,ym] of RIVERLBL.concat(LBL[yr]||[])){const [x,z]=mapXY(xm,ym);if(Math.abs(x)>.97||Math.abs(z)>.97)continue;const q=P(x,y+tf[i]*Hn(x,z)+.02,z);if(!q)continue;const pl=!RIVERLBL.some(r=>r[0]===txt);
+        ctx.font=`${pl?600:400} ${pl?(MOB?12:14):(MOB?10:12)}px ${pl?'"Noto Serif TC",serif':'"Noto Sans TC",sans-serif'}`;ctx.fillStyle=pl?`rgba(230,251,255,${.9*a})`:`rgba(120,235,255,${.75*a})`;ctx.fillText(txt,q[0],q[1]);}
+      if(yr==="今天"&&mode==="map"){ctx.textAlign='left';for(const [txt,xm,ym,id] of TMARKS){const [x,z]=mapXY(xm,ym),q=P(x,y+tf[i]*Hn(x,z)+.01,z);if(!q||prevNodes.some(n=>Math.hypot(n.sx-q[0],n.sy-q[1])<34))continue;
+        const hv=hoverMark&&hoverMark[3]===id;ctx.fillStyle=`rgba(240,214,168,${(hv?1:.85)*a})`;ctx.beginPath();ctx.moveTo(q[0],q[1]-5);ctx.lineTo(q[0]+5,q[1]);ctx.lineTo(q[0],q[1]+5);ctx.lineTo(q[0]-5,q[1]);ctx.closePath();ctx.fill();
+        ctx.font=`${hv?600:500} ${MOB?11:12.5}px "Noto Sans TC",sans-serif`;ctx.fillStyle=`rgba(246,230,200,${.95*a})`;ctx.fillText(txt,q[0]+9,q[1]+4);const w=ctx.measureText(txt).width;markBoxes.push({x:q[0]-8,y:q[1]-10,w:w+20,h:20,m:[txt,xm,ym,id]});}}
+      ctx.textAlign='start';ctx.globalCompositeOperation='lighter';}
+    curT=0;
+    if(c.every(Boolean)){const lp=c.reduce((m,p)=>p[0]>m[0]?p:m);ctx.globalCompositeOperation='source-over';
+      const big=i===focus;ctx.strokeStyle=`rgba(95,227,255,${.5*a})`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(lp[0],lp[1]);ctx.lineTo(lp[0]+14,lp[1]);ctx.stroke();
+      const fs=big?(MOB?18:26):(MOB?12:15);ctx.font=`600 ${fs}px "Noto Serif TC",serif`;const w=ctx.measureText(yr).width;
+      let lx=lp[0]+18,ly=lp[1];if(lx+w>W-RW()){const lq=c.reduce((m,p)=>p[0]<m[0]?p:m);lx=lq[0]-18-w;ly=lq[1];}
+      if(lx>4&&lx+w<W-RW()+10){ctx.textBaseline='middle';ctx.fillStyle=`rgba(${big?'191,244,255':'95,227,255'},${.95*Math.max(a,.4)})`;ctx.fillText(yr,lx,ly);ctx.textBaseline='alphabetic';
+      hitBoxes.push({i,x:lx-6,y:ly-fs,w:w+12,h:fs*2});}
+      ctx.globalCompositeOperation='lighter';}
+  });
+  for(const s of SITES){
+    const ys=Object.keys(s.nodes).map(k=>LAYERS.indexOf(k)).filter(i=>i>=0).sort((a,b)=>a-b);
+    const p0=P(s.x,layerY(ys[0])-.05,s.z),p1=P(s.x,layerY(ys[ys.length-1])+.35,s.z);
+    if(p0&&p1){const g=ctx.createLinearGradient(p0[0],p0[1],p1[0],p1[1]);const al=s.ready?1:.35;
+      g.addColorStop(0,`rgba(95,227,255,${.15*al})`);g.addColorStop(.5,`rgba(191,244,255,${.75*al})`);g.addColorStop(1,'rgba(95,227,255,0)');
+      ctx.strokeStyle=g;ctx.lineWidth=s.ready?3:1.5;ctx.shadowColor='rgba(95,227,255,1)';ctx.shadowBlur=MOB||LOWFX?0:(s.ready?16:6);
+      ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();ctx.shadowBlur=0;}
+    for(const i of ys){
+      const yr=LAYERS[i],yy=layerY(i)+tf[i]*Hn(s.x,s.z),p=P(s.x,yy,s.z);if(!p)continue;
+      const isSel=sel&&sel.site===s&&sel.year===yr,isH=(hover&&hover.site===s&&hover.year===yr)||isSel,fo=focus<0||focus===i;
+      const r=(s.ready?5:3.5)*(isH?1.7:1)*(fo?1:.6)*(1+.15*Math.sin(t*4+i));
+      ctx.fillStyle=s.ready?`rgba(220,250,255,${fo?.95:.45})`:`rgba(95,227,255,${fo?.6:.3})`;ctx.shadowColor='rgba(95,227,255,1)';ctx.shadowBlur=LOWFX?0:isH?24:(MOB?0:12);
+      ctx.beginPath();ctx.arc(p[0],p[1],r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+      ctx.strokeStyle=`rgba(95,227,255,${(s.ready?.6:.3)*(fo?1:.4)})`;ctx.lineWidth=1;line(circ(isSel?.07:.04,24,s.x,s.z),yy);
+      if(mode==="map") nodeScreen.push({site:s,year:yr,data:s.nodes[yr],sx:p[0],sy:p[1]});
+    }
+  }
+  placeCard();
+  if(warp>0)drawWarp();
+  ctx.globalCompositeOperation='source-over';
+  requestAnimationFrame(frame);
+}
+
+/* ================= 穿越 ================= */
+let warp=0,warpDir=1;const streaks=Array.from({length:220},()=>({a:Math.random()*Math.PI*2,r:Math.random(),s:.5+Math.random()}));
+function drawWarp(){
+  const cx=W/2,cy=H/2,R=Math.hypot(W,H)/2;ctx.globalCompositeOperation='lighter';
+  for(const s of streaks){s.r+=.02*s.s*warp*3*warpDir;if(s.r>1)s.r=Math.random()*.2;if(s.r<0)s.r=.8+Math.random()*.2;
+    const r0=s.r*R,r1=r0+R*.12*warp*s.s,wk=Math.min(1,warp*1.4);
+    ctx.strokeStyle=`rgba(${Math.round(95+150*wk)},${Math.round(227-30*wk)},${Math.round(255-130*wk)},${Math.min(1,(warpDir>0?1.05:.55)*warp)})`;ctx.lineWidth=warpDir>0?1.8:1.2;
+    ctx.beginPath();ctx.moveTo(cx+Math.cos(s.a)*r0,cy+Math.sin(s.a)*r0);ctx.lineTo(cx+Math.cos(s.a)*r1,cy+Math.sin(s.a)*r1);ctx.stroke();}
+}
+const ease=k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+function tween(ms,fn){return new Promise(res=>{const s=performance.now();(function st(n){const k=Math.min(1,(n-s)/ms);fn(ease(k),k);k<1?requestAnimationFrame(st):res();})(s);});}
+const warm=document.getElementById('warm'),scene=document.getElementById('scene');
+let saved=null;
+/* 圖片預載：點開資訊框就開始下載；穿越特效會等到圖片準備好才結束 */
+const IMGS={};
+function loadImg(src){if(!src)return Promise.resolve(true);if(!IMGS[src])IMGS[src]=new Promise(res=>{const im=new Image();im.onload=()=>{(im.decode?im.decode():Promise.resolve()).then(()=>res(true),()=>res(true));};im.onerror=()=>res(false);im.src=src;});return IMGS[src];}
+const waitEl=document.getElementById('wait');
+async function readyFor(d){const p=loadImg(d.img);let done=false;p.then(()=>done=true);
+  const t=setTimeout(()=>{if(!done)waitEl.classList.add('on');},1500);
+  const ok=await Promise.race([p,new Promise(r=>setTimeout(()=>r(false),9000))]);clearTimeout(t);waitEl.classList.remove('on');return ok;}
+async function dive(n){
+  if(!n.site.ready||mode!=="map")return;
+  mode="dive";warpDir=1;navb.classList.remove('on');card.classList.remove('on');tip.classList.remove('on');cv.classList.remove('hot');
+  saved={...cam};const i=LAYERS.indexOf(n.year),y=layerY(i),s={...cam};
+  SND.bedTo(0,1.6);
+  if(reduce){showScene(n);return;}
+  await tween(900,k=>{cam.tx=s.tx+(n.site.x-s.tx)*k;cam.tz=s.tz+(n.site.z-s.tz)*k;cam.ty=s.ty+(y-s.ty)*k;cam.d=s.d+(1.4-s.d)*k;cam.pitch=s.pitch+(1.45-s.pitch)*k;});
+  await tween(1300,k=>{cam.d=1.4-1.36*k;cam.fov=50+70*k;warp=k;warm.style.opacity=Math.max(0,(k-.62)/.38);});
+  n.imgOk=await readyFor(n.data);
+  showScene(n);
+}
+function showScene(n){
+  const d=n.data,bg=document.getElementById('sbg');
+  const imgOk=d.img&&n.imgOk!==false;
+  bg.innerHTML=d.vis==="yusheng"?'<div class="typo"><b>餘生</b><i>碑上刻的兩個字</i></div>':(!imgOk?`<div class="card"><span>${d.img?'影像暫時無法載入':(d.card||'')}</span></div>`:'');
+  bg.style.backgroundImage=imgOk?`url(${d.img})`:'none';
+  buildScene(n);
+  document.getElementById('syr').textContent=n.year;
+  document.getElementById('sh').textContent=d.t;
+  const sp=document.getElementById('sp');sp.innerHTML=d.p.map(x=>`<p>${x}</p>`).join('');
+  document.getElementById('scr').textContent=d.cr;
+  const so=document.getElementById('ssrc');so.textContent=d.src||'';so.classList.remove('on');setTimeout(()=>so.classList.add('on'),reduce?0:900+d.p.length*1400);
+  mode="scene";scene.classList.add('on');scene.setAttribute('aria-hidden','false');
+  document.getElementById('sbg').style.transform='';
+  SND.playScene(d.snd);
+  [...sp.children].forEach((p,i)=>setTimeout(()=>p.classList.add('on'),reduce?0:900+i*1400));
+  setTimeout(()=>{warm.style.transition='opacity .8s';warm.style.opacity=0;warp=0;},300);
+  document.getElementById('back').focus({preventScroll:true});
+  window._last=n;
+}
+const hsl=document.getElementById('hsl'),hnote=document.getElementById('hnote'),syear=document.getElementById('syear'),morb=document.getElementById('morb'),more=document.getElementById('more');
+let curScene=null;
+/* 手機直式：圖片改成「高度貼齊、可左右平移」，用傾斜手機或手指拖曳看其他區塊 */
+let panX=.5,panT=.5,tiltOn=false,tiltBase=null;
+const isPan=d=>MOB&&d&&d.img&&!d.vis;
+function applyPan(){if(!curScene)return;const bg=document.getElementById('sbg');if(isPan(curScene.data)){bg.style.backgroundSize='auto 100%';bg.style.backgroundPosition=`${panX*100}% 50%`;}else{bg.style.backgroundSize='';bg.style.backgroundPosition='';}placeHs();}
+function imgRect(d){const W2=scene.clientWidth,H2=scene.clientHeight;if(!d.img||d.vis)return {x:0,y:0,w:W2,h:H2};
+  const im=new Image();im.src=d.img;const iw=im.naturalWidth||16,ih=im.naturalHeight||9;
+  if(isPan(d)){const w=H2*iw/ih;if(w>W2)return {x:-(w-W2)*panX,y:0,w,h:H2};}const sc=Math.max(W2/iw,H2/ih);return {x:(W2-iw*sc)/2,y:(H2-ih*sc)/2,w:iw*sc,h:ih*sc};}
+function placeHs(){if(!curScene)return;const d=curScene.data,r=imgRect(d);let hidden=0;
+  [...hsl.children].forEach((b,k)=>{if(!d.hs||!d.hs[k])return;let [x,y]=d.hs[k];if(d.vis&&MOB)x-=22;const W3=scene.clientWidth,H3=scene.clientHeight,px=Math.max(24,Math.min(W3-24,r.x+r.w*x/100)),py=Math.max(MOB?124:78,Math.min(H3-36,r.y+r.h*y/100));const tr=document.querySelector('#scene .txt').getBoundingClientRect(),under=!scene.classList.contains('notxt')&&px>tr.left-16&&px<tr.right+16&&py>tr.top-16&&py<tr.bottom+16;
+    const vis=!under;if(under)hidden++;b.style.left=px+'px';b.style.top=py+'px';b.style.display=vis?'':'none';});
+  updCnt(hidden);}
+/* 探索計數：已點開幾處／全部幾處；有被文字擋住的點時，提示可以按「只看畫面」 */
+let seenHs=new Set();
+function updCnt(hidden){const n=curScene&&curScene.data.hs?curScene.data.hs.length:0;const el=document.getElementById('hcnt');if(!n){el.hidden=true;return;}el.hidden=false;
+  el.textContent=`已探索 ${seenHs.size}／${n} 處`+(hidden&&!scene.classList.contains('notxt')?`　・${hidden} 處在文字後面`:'');}
+function buildScene(n){curScene=n;seenHs=new Set();const d=n.data;closeNote();more.classList.remove('on');panX=panT=.5;tiltBase=null;applyPan();
+  hsl.innerHTML=(d.hs||[]).map(([x,y,t],k)=>`<button data-k="${k}" aria-label="${t}"><span>${t}</span></button>`).join('');hsl.classList.remove('on');
+  setTimeout(()=>{hsl.classList.add('on');placeHs();},reduce?0:1200);placeHs();
+  const ys=Object.keys(n.site.nodes);syear.innerHTML=ys.map(y=>`<button data-y="${y}" class="${y===n.year?'on':''}" aria-pressed="${y===n.year}">${y}</button>`).join('');
+  morb.hidden=!d.more;
+  if(d.more&&!document.getElementById('mcards').children.length)document.getElementById('mcards').innerHTML=TODAY.map(c=>`<div class="c">${c.img?`<img src="${c.img}" alt="${c.alt}" loading="lazy">`:''}<h5>${c.t}</h5><p>${c.p}</p><small>${c.s}</small></div>`).join('');}
+function closeNote(){hnote.classList.remove('on');hsl.querySelectorAll('.on').forEach(b=>b.classList.remove('on'));}
+hsl.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const [x,y,t,body,src]=curScene.data.hs[+b.dataset.k];
+  closeNote();b.classList.add('on','seen');seenHs.add(+b.dataset.k);updCnt(0);placeHs();hnote.querySelector('h4').textContent=t;hnote.querySelector('p').textContent=body;hnote.querySelector('small').textContent='資料：'+src;
+  const bx=parseFloat(b.style.left),by=parseFloat(b.style.top),W2=scene.clientWidth,H2=scene.clientHeight;hnote.classList.add('on');
+  const nw=hnote.offsetWidth,nh=hnote.offsetHeight;let lx=bx+24,ly=by-nh/2;if(lx+nw>W2-12)lx=bx-24-nw;lx=Math.max(12,Math.min(W2-nw-12,lx));ly=Math.max(70,Math.min(H2-nh-12,ly));
+  hnote.style.left=lx+'px';hnote.style.top=ly+'px';SND.tick();});
+hnote.querySelector('.x').onclick=closeNote;
+addEventListener('resize',()=>{if(mode==="scene")applyPan();});
+let drag=null;
+scene.addEventListener('pointerdown',e=>{if(!curScene||!isPan(curScene.data)||e.target.closest('button,.txt,#hnote,#more,nav'))return;drag={x:e.clientX,p:panX};});
+scene.addEventListener('pointermove',e=>{if(!drag)return;const d=curScene.data,im=new Image();im.src=d.img;const w=scene.clientHeight*(im.naturalWidth||16)/(im.naturalHeight||9),span=Math.max(1,w-scene.clientWidth);
+  panX=panT=Math.max(0,Math.min(1,drag.p-(e.clientX-drag.x)/span));if(tiltOn)tiltBase=null;applyPan();});
+addEventListener('pointerup',()=>drag=null);addEventListener('pointercancel',()=>drag=null);
+function onTilt(e){if(e.gamma==null||mode!=="scene")return;if(tiltBase===null)tiltBase={g:e.gamma,p:panX};panT=Math.max(0,Math.min(1,tiltBase.p+(e.gamma-tiltBase.g)/35));}
+(function tiltLoop(){if(tiltOn&&mode==="scene"&&Math.abs(panT-panX)>.002){panX+=(panT-panX)*.18;applyPan();}requestAnimationFrame(tiltLoop);})();
+async function enableTilt(){if(tiltOn||!MOB)return;try{if(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==='function'){const r=await DeviceOrientationEvent.requestPermission();if(r!=='granted')return;}
+  addEventListener('deviceorientation',onTilt);tiltOn=true;}catch(e){}}
+const toast=document.getElementById('toast');function showToast(t){toast.textContent=t;toast.classList.add('on');clearTimeout(showToast.t);showToast.t=setTimeout(()=>toast.classList.remove('on'),3200);}
+document.getElementById('txtt').onclick=e=>{const on=scene.classList.toggle('notxt');if(on&&curScene&&isPan(curScene.data)){showToast('用手指左右拖曳，可以看到畫面的其他地方');}e.currentTarget.setAttribute('aria-pressed',on);closeNote();e.currentTarget.textContent=on?'顯示文字':'只看畫面';placeHs();};
+morb.onclick=()=>{if(mode!=="scene")return;closeNote();more.classList.remove('on');SND.stopScene();
+  hsl.classList.remove('on');hsl.innerHTML='';scene.classList.remove('on');scene.setAttribute('aria-hidden','true');
+  Object.assign(cam,saved);for(const k in camGoal)delete camGoal[k];warp=0;warm.style.opacity=0;mode="map";go("today");};
+more.querySelector('.x').onclick=()=>more.classList.remove('on');
+/* 場景之間換年代：往後的年代向右穿越、往前的年代向左穿越 */
+const hopc=document.getElementById('hopc'),hx=hopc.getContext('2d');
+function hopFx(dir,ms){if(reduce)return;const d=Math.min(2,devicePixelRatio||1);hopc.width=innerWidth*d;hopc.height=innerHeight*d;hx.setTransform(d,0,0,d,0,0);
+  const L=Array.from({length:110},()=>({y:Math.random()*innerHeight,x:Math.random()*innerWidth,v:.6+Math.random()*1.6,w:40+Math.random()*220,a:.25+Math.random()*.6}));
+  const t0=performance.now();(function st(now){const k=(now-t0)/ms;if(k>=1){hx.clearRect(0,0,innerWidth,innerHeight);return;}
+    const amp=Math.sin(Math.PI*k);hx.clearRect(0,0,innerWidth,innerHeight);hx.fillStyle=`rgba(243,230,204,${.55*amp})`;hx.fillRect(0,0,innerWidth,innerHeight);
+    for(const l of L){l.x-=dir*l.v*38*amp;if(l.x<-l.w)l.x=innerWidth;if(l.x>innerWidth)l.x=-l.w;
+      const g=hx.createLinearGradient(l.x,0,l.x+l.w,0);const c=`rgba(255,${200+Math.round(40*l.a)},150,${l.a*amp})`;
+      if(dir>0){g.addColorStop(0,c);g.addColorStop(1,'rgba(255,230,180,0)');}else{g.addColorStop(0,'rgba(255,230,180,0)');g.addColorStop(1,c);}
+      hx.fillStyle=g;hx.fillRect(l.x,l.y,l.w*(.6+amp),1.4);}
+    requestAnimationFrame(st);})(t0);}
+function slide(els,from,to,ms,ease){return Promise.race([new Promise(r=>setTimeout(r,(reduce?1:ms)+400)),Promise.all(els.map(el=>{try{return el.animate([{transform:`translateX(${from}%)`,opacity:from?0:1},{transform:`translateX(${to}%)`,opacity:to?0:1}],{duration:reduce?1:ms,easing:ease,fill:'forwards'}).finished.catch(()=>{});}catch(e){return Promise.resolve();}}))]);}
+syear.addEventListener('click',e=>{hopTo(e).catch(()=>{});});
+async function hopTo(e){const b=e.target.closest('button');if(!b||!curScene||b.dataset.y===curScene.year||mode!=="scene")return;
+  /* 保險：無論哪一步出錯或卡住，3 秒後一定回到可以操作的狀態 */
+  const guard=setTimeout(()=>{if(mode==="hop"){showScene(n);warm.style.opacity=0;}},3000);
+  const s0=curScene.site,ys=Object.keys(s0.nodes),yr=b.dataset.y,dir=ys.indexOf(yr)>ys.indexOf(curScene.year)?1:-1;
+  const n={site:s0,year:yr,data:s0.nodes[yr]};mode="hop";SND.tick();closeNote();more.classList.remove('on');loadImg(n.data.img);
+  /* 背景照片只做淡出淡入（左右滑會露出照片邊界）；文字和可點位置才左右滑 */
+  const bgEl=document.getElementById('sbg'),els=[document.querySelector('#scene .txt'),hsl];
+  const fade=(a,b2,ms)=>{try{return bgEl.animate([{opacity:a},{opacity:b2}],{duration:reduce?1:ms,fill:'forwards'}).finished.catch(()=>{});}catch(err){return Promise.resolve();}};
+  hopFx(dir,1100);await Promise.all([slide(els,0,-dir*10,420,'ease-in'),fade(1,.08,420)]);
+  n.imgOk=await readyFor(n.data);
+  if(mode!=="hop")return;
+  const i=LAYERS.indexOf(yr);if(i>=0){focus=i;syncRuler();saved=Object.assign({},saved,{ty:BASEY+i*GAP+.12});}
+  showScene(n);warm.style.opacity=0;
+  clearTimeout(guard);
+  await Promise.all([slide(els,dir*10,0,520,'cubic-bezier(.2,.8,.2,1)'),fade(.08,1,520)]);try{[bgEl,...els].forEach(el=>el.getAnimations().filter(a=>!a.transitionProperty&&!a.animationName).forEach(a=>a.cancel()));}catch(err){[bgEl,...els].forEach(el=>{el.style.transform='';el.style.opacity='';});}
+  placeHs();}
+document.getElementById('back').onclick=async()=>{if(mode!=="scene")return;
+  mode="back";closeNote();more.classList.remove('on');scene.classList.remove('notxt');document.getElementById('txtt').textContent='只看畫面';
+  SND.stopScene();SND.bedTo(.05,2);LAYERS.forEach((_,i)=>tf[i]=0);
+  /* 反向穿越：暖光慢慢漸入、場景同時淡出，再從地點拉回記憶地層 */
+  const site=curScene?curScene.site:null,y=curScene?layerY(Math.max(0,LAYERS.indexOf(curScene.year))):saved.ty;
+  hsl.classList.remove('on');hsl.innerHTML='';
+  warm.style.transition=reduce?'none':'opacity .8s ease-in';warm.style.opacity=1;
+  scene.classList.remove('on');scene.setAttribute('aria-hidden','true');
+  await new Promise(r=>setTimeout(r,reduce?0:800));
+  document.getElementById('sbg').style.transform='';
+  for(const k in camGoal)delete camGoal[k];
+  if(site)Object.assign(cam,{tx:site.x,tz:site.z,ty:y,pitch:1.45,d:.04,fov:120});
+  warpDir=-1;warp=1;warm.style.transition='none';
+  if(!reduce){
+    await tween(1100,k=>{cam.d=.04+1.36*k;cam.fov=120-70*k;warp=1-k;warm.style.opacity=Math.max(0,1-k/.55);});
+    const s={...cam};
+    await tween(900,k=>{for(const key of ['tx','tz','ty','d','pitch','yaw','fov'])if(saved[key]!=null)cam[key]=s[key]+(saved[key]-s[key])*k;});
+  }else Object.assign(cam,saved);
+  warp=0;warpDir=1;warm.style.transition='';warm.style.opacity=0;
+  for(const k in camGoal)delete camGoal[k];
+  navb.classList.add('on');mode="map";idle=0;if(window._last)openCard(window._last);
+};
+
+
+/* ================= 今天的清流廳 ================= */
+const TDROOM=[
+  {id:"t-life",h:"在部落裡走一圈",k:"LIFE",cards:[
+    {w:1,img:"img/c_street.jpg",alt:"清流部落的道路，路旁石牆上的石頭漆成各種顏色",t:"清風路",p:"穿過部落的清風路，路旁的石牆上，一顆顆石頭被漆成黃、藍、紅、綠。部落的房子沿著臺地的坡度排開。",s:"照片：lienyuan lee，CC BY 3.0，via Wikimedia Commons"},
+    {id:"t-police",img:"img/f_3894.jpg",alt:"紅磚兩層樓的派出所，門上有徽章",t:"派出所",p:"日治時期的駐在所，就在今天清流派出所的位置；當年駐在所四周圍著垣牆，警察就近監看族人。",s:"照片：林彥廷攝於 2026-10-31。資料：館內展板"},
+    {img:"img/f_3895.jpg",alt:"從派出所往下看，部落的房子沿坡地向下延伸",t:"從高處往下看",p:"從派出所往下看，部落的房子沿著坡地一路排開，遠處是山。",s:"照片：林彥廷攝於 2026-10-31"},
+    {img:"img/f_3896.jpg",alt:"畫著賽德克菱形紋的平房",t:"市集",p:"這座畫著賽德克菱形紋的平房，是部落辦市集的地方。",s:"照片：林彥廷攝於 2026-10-31"},
+    {img:"img/f_3903.jpg",alt:"兩層樓的餘生紀念館，外牆有紅白菱形紋",t:"餘生紀念館",p:"九二一地震後在紀念碑旁興建，展出霧社事件與清流部落的史料。2021 年，一位臺中企業家捐助經費，完成了無障礙工程。",s:"照片：林彥廷攝於 2026-11-01。資料：館內展板；原文會新聞 2021-05-24"},
+    {t:"信仰",p:"戰後基督教傳入部落，展板記載居民多信奉天主教與基督教。現在部落裡有臺灣基督長老教會谷路邦（清流）教會，也有真耶穌教會清流祈禱所。",s:"資料：館內展板〈清流部落〉；Google 地圖（2026 年 11 月查詢）"},
+    {t:"露營與觀光",p:"沿著北港溪與眉原溪，部落周邊有多處露營區與民宿。九二一地震後，部落也推動民宿、生態旅遊與部落導覽。",s:"資料：館內展板〈921 地震災後重建與社區營造〉；Google 地圖（2026 年 11 月查詢）"}]},
+  {id:"t-work",h:"田裡與手上的工作",k:"WORK",cards:[
+    {w:1,img:"img/f_3900.jpg",alt:"金黃的稻田，遠處是山林與溫室",t:"川中米",p:"清流所在的北港溪上游谷地，是「川中米」的產地，主要品種是台梗 9 號，由臺中區農業改良場輔導、仁愛鄉農會籌組產銷班。近年推動友善栽培：用紙蓆插秧抑草、以微生物製劑取代化學農藥；生態調查記錄到蝶類 46 種、鳥類 68 種，還有保育類的食蟹獴。1931 年族人被要求學種水稻的臺地，今天長出自己的品牌。",s:"照片：林彥廷攝於 2026-11-01。資料：農業部農業知識入口網；今周刊 2025-11-27；工商時報 2025-11-24"},
+    {id:"t-plum",img:"img/c_plum.jpg",alt:"冬天開著白花的梅樹，旁邊是紅色木欄杆",t:"梅園與「三酸」",p:"青梅、檸檬、楊梅是互助村與新生村的主要果樹，產期相接，合稱「三酸」，由仁愛鄉果樹生產合作社加工成梅醋、檸檬醋、煙燻烏梅。部落裡的梅園，冬天開滿白花，也辦過賞梅採梅的活動。",s:"照片：lienyuan lee，CC BY 3.0，via Wikimedia Commons。資料：中時新聞網 2019-06-14；原視新聞 2022-12-14；館內展板"},
+    {t:"Ru-Dan 與織布",p:"九二一地震後，清流社區發展協會成立「茹沍 Ru-Dan 染織工作室」。Ru-Dan 在賽德克語是「老人、前輩」，意思是借重長輩的智慧與經驗，把織布等傳統工藝延續下去，也開設編織 DIY 體驗。",s:"資料：館內展板〈921 地震災後重建與社區營造〉"},
+    {t:"社區產業",p:"展板列出的社區產業還有苧麻生態園、主題餐廳與露天咖啡，並提供部落人文導覽、生態導覽與部落生活體驗營。",s:"資料：館內展板（約 2000 年代製作，現況待查證）"}]},
+  {id:"t-days",h:"記得的日子",k:"MEMORY",cards:[
+    {t:"元旦早上 8 點",p:"每年元旦早上，族人在紀念碑前集合，祭拜祖靈。日治時期，這一天全部落要到同一個地方參拜神社。",s:"資料：村上優 2018 p.72；館內展板"},
+    {t:"5 月 6 日",p:"1931 年 5 月 6 日，族人被遷到這座臺地。這一天是迫遷日，族人也會到碑前遙祭祖先。",s:"資料：館內展板〈清流部落餘生紀念碑〉"},
+    {w:1,t:"畫在碑上方的生活",p:"2004 年，藝術家 Awi Silan 在紀念碑的上方畫上族人的傳統生活：狩獵、織布、舂米、吹口簧琴，也畫了後來被要求的種稻與牛耕。",s:"資料：國家文化記憶庫〈清流部落餘生紀念館空間造景〉"}]},
+  {id:"t-zy",h:"河對岸的中原",k:"ACROSS THE RIVER",cards:[
+    {img:"img/c_river.jpg",alt:"北港溪寬闊的河床與溪水，兩岸是山",t:"北港溪",p:"清流與中原隔著北港溪相望。1931 年，日本人看到北港溪、阿比斯溪、眉原溪在這片臺地排成「川」字，把這裡叫做「川中島」。",s:"照片：lienyuan lee，CC BY 3.0，via Wikimedia Commons。資料：郭明正〈川中島─清流部落的歷史沿革〉"},
+    {id:"t-bridge",img:"img/c_bridge.jpg",alt:"跨越溪流的窄橋，兩旁是樹林",t:"中原橋",p:"兩個部落之間靠橋相連。日治時期，駐在所的警察會安排川中島社的女子嫁給中原社的青年，兩個部落從此有了親戚關係。",s:"照片：lienyuan lee，CC BY 3.0，via Wikimedia Commons。資料：村上優 2018 p.82–83"},
+    {w:1,img:"img/c_zhongyuan.jpg",alt:"中原部落的房舍與田地，背後是山",t:"回到巴蘭",p:"隔著北港溪的中原部落，族人原本住在霧社一帶的巴蘭等三社，因萬大水庫失去耕地而遷來。2019 年起，每年 8、9 月，族人回到萬大水庫上方的巴蘭舊社尋根祭祖，每年有上百人參加，也有旅外的族人回鄉。",s:"照片：lienyuan lee，CC BY 3.0，via Wikimedia Commons。資料：原視新聞 2024-09-06；館內展板"}]}
+];
+function renderToday(){
+  const nums='<div class="num"><div><b>499</b>設籍人口（約 2014 年）</div><div><b>470</b>其中是餘生者的後代</div><div><b>約 600</b>後代總數，包含在外地的族人</div></div><small style="display:block;margin-top:.6em;font-size:11.5px;color:#8a6a48">資料：郭明正〈川中島─清流部落的歷史沿革〉。館內展板另記為 115 戶、約 500 人（展板年代約 2000 年代）。</small>';
+  document.getElementById('tdin').innerHTML=`<h1>今天的清流</h1><p class="lead">清流部落屬南投縣仁愛鄉互助村，隔著北港溪與中原部落相望。族人叫這裡 Gluban。九十多年前被迫遷來的臺地，今天是許多人的家。</p>${nums}`+
+    TDROOM.map(S=>`<section class="sec" id="${S.id}"><h2>${S.h}</h2><p class="k">${S.k}</p><div class="grid">${S.cards.map(c=>`<figure class="c${c.w?' wide':''}"${c.id?` id="${c.id}"`:''}>${c.img?`<img src="${c.img}" alt="${c.alt}" loading="lazy">`:''}<h3>${c.t}</h3><p>${c.p}</p><small>${c.s}</small></figure>`).join('')}</div></section>`).join('')+
+    `<p class="lead" style="margin-top:3em">這間展廳還在長大。若您有部落今天的照片或故事，歡迎與我們聯繫。</p>`;}
+renderToday();
+/* 記憶地層「今天」層上的小地標：點了直接走進今天的清流廳 */
+/* 村落尺度的地點彼此只差一兩百公尺，在 3.5 公里的地圖上會疊在一起，所以先不放；改由年代說明面板走進展廳 */
+const TMARKS=[];let prevNodes=[];
+let markBoxes=[];
+
+/* ================= 今天的清流（今天場景的延伸卡片） ================= */
+const TODAY=[
+  {t:"川中米",img:"img/f_3900.jpg",alt:"金黃的稻田，遠處是山林與溫室",p:"清流所在的北港溪上游谷地，是「川中米」的產地，主要品種是台梗 9 號，由臺中區農業改良場輔導、仁愛鄉農會籌組產銷班。近年推動友善栽培，田間調查記錄到食蟹獴等保育類動物。",s:"資料：農業部農業知識入口網；今周刊 2025-11-27。照片：林彥廷攝於 2026-11-01 田調途中"},
+  {t:"三酸",p:"青梅、檸檬、楊梅是互助村與新生村的主要果樹，產期相接，合稱「三酸」，由仁愛鄉果樹生產合作社加工成梅醋、檸檬醋、煙燻烏梅等產品。",s:"資料：中時新聞網 2019-06-14；原視新聞 2022-12-14"},
+  {t:"派出所",img:"img/f_3894.jpg",alt:"紅磚兩層樓的派出所，門上有徽章",p:"日治時期的駐在所，就在今天清流派出所的位置；當年駐在所四周圍著垣牆，警察就近監看族人。",s:"照片：林彥廷攝於 2026-10-31。資料：館內展板"},
+  {t:"從高處往下看",img:"img/f_3895.jpg",alt:"從派出所往下看，部落的街道沿坡地向下延伸",p:"從派出所往下看，部落的房子沿著坡地一路排開，遠處是山。",s:"照片：林彥廷攝於 2026-10-31"},
+  {t:"市集",img:"img/f_3896.jpg",alt:"有賽德克菱形紋彩繪的平房",p:"這座畫著賽德克菱形紋的平房，是部落辦市集的地方。",s:"照片：林彥廷攝於 2026-10-31"},
+  {t:"社區產業",p:"九二一地震後，社區發展出苧麻生態園、梅園、Ru-Dan 編織工作坊與餐飲，並提供部落人文導覽、生態導覽、編織 DIY、生活體驗營和賞梅採梅。",s:"資料：館內展板（約 2000 年代製作，現況待查證）"},
+  {t:"信仰",p:"戰後基督教傳入部落，展板記載居民多信奉天主教與基督教。現在部落裡有臺灣基督長老教會谷路邦（清流）教會，也有真耶穌教會清流祈禱所。",s:"資料：館內展板〈清流部落〉；Google 地圖（2026 年 11 月查詢）"},
+  {t:"露營與觀光",p:"沿著北港溪與眉原溪，部落周邊有多處露營區與民宿。",s:"資料：Google 地圖（2026 年 11 月查詢）"},
+  {t:"人口",p:"約 2014 年，設籍清流的有 499 人，其中 470 人是餘生者的後代；另有不少族人在外地工作生活。",s:"資料：郭明正〈川中島─清流部落的歷史沿革〉"},
+  {t:"記得的日子",p:"元旦早上 8 點，族人在紀念碑前祭拜祖靈；5 月 6 日迫遷日，也會到碑前遙祭祖先。",s:"資料：村上優 2018 p.72；館內展板"}
+];
+/* ================= 年代說明（記憶地層左側） ================= */
+const L1="村上優 2018",L2="郭明正〈川中島─清流部落的歷史沿革〉",L3="邱建堂 2010",L4="北村嘉恵 2010",L6="國家文化記憶庫",LP="館內展板";
+const LAYER_INFO={
+  "1931":{h:"遷到川中島",li:[
+    "5 月 6 日，霧社事件倖存的 278 人被遷到這座臺地。",
+    "他們來自六個部落：Mhebu、Gungu、Suku、Bwaarung、Truwan、Drodux。",
+    "北港溪、阿比斯溪、眉原溪在臺地上排成「川」字，日本人因此稱這裡「川中島」。",
+    "遷入三天後分配水田，每人約 210 坪；駐在所職員發給農具、直接指導耕作。",
+    "駐在所蓋在臺地的高處，就是今天清流派出所的位置，四周圍著垣牆。",
+    "遷來之初遇上痢疾流行。10 月又有男子被捕、後來遇害，人數有 23 人與 32 人兩種記載。",
+    "部落男性人口：1931 年 146 人，1932 年 115 人。",
+    "8 月的「霧社事件總決算」，把被遷走各社的土地，分給道澤、土魯閣兩群，以及巴蘭、塔卡南、卡茲庫等社。12 月，在埔里舉行川中島社與各群代表的和解式。",
+    "這片臺地原是泰雅族眉原群的傳統領域，1921 年起有漢人開墾，形成小型客家聚落；族人剛遷來時，眉原部落的長輩曾接濟他們。"],
+    s:`${L1} p.14、41、43、68–69；${L2}；${L3} p.17；${L4}；${LP}`},
+  "1937":{h:"神社與教育所",li:[
+    "教育所的開設日期有兩種記載：館內展板為 1931 年 5 月 21 日（川中島「蕃童」教育所），村上優論文為 1932 年 5 月 12 日。",
+    "1935 年，川中島社總人口 216 人。",
+    "1937 年 12 月 25 日，部落最高處的川中島社祠完工；每年 10 月 28 日與元旦，全部落都要參拜。",
+    "到 1937 年，全社只剩 230 人。",
+    "1938 年，能高郡各社的青年團員被帶到川中島、眉原等「先進」蕃社觀摩。",
+    "1939 年起，北港溪對岸的中原，遷來了因萬大水庫失去耕地的巴蘭、塔卡南、卡茲庫三社族人。",
+    "太平洋戰爭期間，川中島有 33 名青年加入「高砂義勇隊」：20 人派往南洋，其中 12 人戰死；13 人派往花蓮港一帶，全數歸來。",
+    "1937 年中日戰爭後推行「皇民化運動」：川中島積極推廣日語、限制族語，設立「簡易國語講習所」，要求族人唱日本國歌、敬日本國旗。",
+    "1939 年起，族人戶籍上的名字陸續改成日本姓名。",
+    "1942 年，部落男性人口 112 人。"],
+    s:`${L1} p.53–54、60、72；${L2}；${L4}；${LP}〈川中島教育所〉〈皇民化運動〉`},
+  "1950":{h:"戰後，改稱清流",li:[
+    "1946 年 4 月 1 日成立仁愛鄉，鄉公所設在霧社；1950 年改屬南投縣，川中島改名「清流」，劃入互助村。族人一直稱這裡 Gluban。",
+    "戰後原住民被分為「平地山胞」與「山地山胞」，政府推行「中國化」政策；基督教也在這時傳入部落。",
+    "居民以務農為主，生活艱苦，但很重視下一代的教育，後來有不少人擔任教職。部落入口的大楓樹，曾是部落的地標。",
+    "1950 年，社祠拆除，原址立起「餘生紀念碑」，兩座石燈籠留了下來。",
+    "1953 年，霧社另立「霧社山胞抗日起義紀念碑」。",
+    "經歷「十月清算」後，長輩多年絕口不提事件，成為部落的禁忌（Bsaniq）；孫輩甚至不知道事件和自己的部落有關。"],
+    s:`${L1} p.16–17；${L2}；${LP}〈國民政府治理下的山地政策〉〈清流部落〉`},
+  "1999":{h:"地震與重建",li:[
+    "1986 年，南投縣政府把紀念碑周邊闢為園地，立起大型碑座與記述事件的碑文。",
+    "1990 年間，清流部落進行社區更新。",
+    "1990 年代初，族人開始向長輩學習這段歷史時，長輩仍會先確認「現在可以說了嗎」。",
+    "1999 年 9 月 21 日，九二一大地震。地震後，紀念碑重建。",
+    "仁愛鄉公所以災後重建經費改建紀念碑，並在碑旁增建餘生紀念館。",
+    "清流社區發展協會推動重建與賽德克文化復育，成立「茹沍 Ru-Dan 染織工作室」（Ru-Dan 意為老人、前輩），也推動民宿、生態旅遊與部落文史整理。",
+    "同年，舞鶴的小說《餘生》出版，許多外地人因此認識這個部落。"],
+    s:`${L1} p.17；${L2}；${LP}`},
+  "今天":{h:"今天的清流",li:[
+    "清流部落屬仁愛鄉互助村，隔著北港溪與中原部落相望。",
+    "約 2014 年，設籍人口 499 人，其中 470 人是餘生者的後代；加上在外地工作生活的族人，後代約 600 人，僅及事件前六個部落人口的一半。",
+    "每年元旦早上 8 點，族人在紀念碑前集合，祭拜祖靈。",
+    "2004 年，藝術家 Awi Silan 在碑的上方畫上族人的傳統生活。",
+    "北港溪上游谷地是「川中米」的產地；青梅、檸檬、楊梅合稱「三酸」，是互助、新生兩村的果樹產業。",
+    "日治時期駐在所的位置，今天是清流派出所；部落有長老教會與真耶穌教會，周邊有多處露營區。"],
+    s:`${L2}；${L1} p.72；${L6}；農業部農業知識入口網；中時新聞網 2019-06-14；Google 地圖（2026-11）`}
+};
+const lp=document.getElementById('lp');
+function syncPanel(){
+  const on=mode==="map"&&focus>=0;const yr=LAYERS[focus];
+  if(on&&lp.dataset.yr!==yr){const d=LAYER_INFO[yr];lp.dataset.yr=yr;
+    document.getElementById('lpk').textContent=yr==="今天"?"今天":yr+" 年";
+    document.getElementById('lph').textContent=d.h;
+    document.getElementById('lpu').innerHTML=d.li.map(x=>`<li>${x}</li>`).join('');
+    document.getElementById('lps').textContent="資料："+d.s;
+    let tg=document.getElementById('lptd');if(!tg){tg=document.createElement('button');tg.id='lptd';tg.textContent='走進今天的清流廳 →';tg.onclick=()=>{SND.tick();go('today');};document.getElementById('lps').after(tg);}tg.hidden=yr!=="今天";}
+  lp.classList.toggle('on',on);document.body.classList.toggle('lpon',on);
+}
+document.getElementById('lptog').onclick=()=>{const o=lp.classList.toggle('open');document.getElementById('lptog').textContent=o?'收合':'展開';};
+setInterval(syncPanel,250);
+
+/* ================= 年表 ================= */
+const TL=[
+  ["1921",null,"這片原屬泰雅族眉原群傳統領域的臺地，被日本人編為官有地後，有漢人來開墾，形成小型客家聚落。",LP+"〈清流部落餘生紀念館沿革〉"],
+  ["1930",null,"霧社事件。事件前，參與的六個部落共有 1,236 人。",L2+"（轉引《臺灣霧社蜂起事件 研究與資料》）",null,1],
+  ["1931","4 月","收容倖存者的地方遭到襲擊，216 人遇害。",L1+" p.14"],
+  ["1930","3 月","日本開始實施「集團移住」政策，把分散的部落集中到駐在所附近，或集體遷往平地。",LP+"〈霧社事件及清流部落大事記〉"],
+  ["1931","5 月 6 日","倖存的 298 人中，除了病人之外的 278 人，在日本警察押送下經眉溪、埔里，被遷到川中島。",L1+" p.14、37–38","1931",1],
+  ["1931","5 月","遷入三天後分配水田，每人約 210 坪；同時遇上痢疾流行。眉原部落的長輩曾送來生活所需。",L1+" p.41；"+L2+"；"+LP],
+  ["1931","5 月 21 日","成立川中島「蕃童」教育所（館內展板記載；村上優論文記為 1932 年 5 月 12 日開設）。",LP+"〈川中島教育所〉；"+L1+" p.60"],
+  ["1931","8 月 19 日","「霧社事件總決算」：被遷走各社的土地，分給道澤、土魯閣兩群，以及巴蘭、塔卡南、卡茲庫等社。",LP+"〈霧社事件及清流部落大事記〉"],
+  ["1931","10 月 15 日","部落男子被捕，1932 年 3 月 17 日在埔里郊外遇害。人數有兩種記載：23 人（邱建堂），32 人（高永清回憶錄，郭明正引述）。",L3+" p.17；"+L2,null,1],
+  ["1931","12 月 15 日","在埔里虎子山舉行川中島社與各群代表的和解式。",LP+"〈霧社事件及清流部落大事記〉"],
+  ["1935",null,"川中島社總人口 216 人。",L2+"（引日治戶口資料）"],
+  ["1937","12 月 25 日","部落最高處的川中島社祠完工。每年 10 月 28 日與元旦，全部落都要參拜。這一年，全社只剩 230 人。",L1+" p.72；"+LP,"1937",1],
+  ["1937",null,"中日戰爭後推行皇民化運動：川中島推廣日語、限制族語，設立「簡易國語講習所」。",LP+"〈皇民化運動〉"],
+  ["1938","9 月 28 日","能高郡各社青年團員 35 人被帶到川中島、眉原等「先進」蕃社觀摩。",LP+"〈霧社事件及清流部落大事記〉"],
+  ["1939",null,"族人戶籍上的名字開始改成日本姓名。",L1+" p.53–54"],
+  ["1939","6 月 11 日","日本興建萬大水庫，巴蘭、塔卡南、卡茲庫三社的耕地被淹沒，44 戶 661 人開始遷到北港溪對岸的中原。其他資料記載的年份從 1934 到 1940 年不等。",LP+"〈霧社事件及清流部落大事記〉；〈德固達雅部落史地〉","1937"],
+  ["1942",null,"部落男性人口 112 人（1931 年為 146 人）。",L4],
+  ["1942",null,"川中島有 33 名青年加入「高砂義勇隊」：20 人派往南洋，其中 12 人戰死、8 人返鄉；13 人派往花蓮港一帶，全數歸來。",LP+"〈高砂義勇隊〉"],
+  ["1946","4 月 1 日","成立仁愛鄉，鄉公所設在霧社，屬臺中縣。",LP+"〈國民政府治理下的山地政策〉"],
+  ["1950",null,"仁愛鄉改屬南投縣，川中島改名「清流」，劃入互助村；族人一直稱這裡 Gluban。",LP+"〈國民政府治理下的山地政策〉；"+L2],
+  ["1950","5 月 6 日","社祠拆除，原址立起「餘生紀念碑」，石燈籠保留。立碑日與 1931 年遷村同一天。",L1+" p.16–17；"+L6,"1950",1],
+  ["1953",null,"霧社另立「霧社山胞抗日起義紀念碑」。",L1+" p.17"],
+  ["1986",null,"南投縣政府把紀念碑周邊闢為園地，立起中國式的大型碑座，碑文記述霧社事件始末與清流部落的遷移史。",LP+"〈清流部落餘生紀念碑〉"],
+  ["1990",null,"清流部落進行社區更新工程。",LP],
+  ["1991",null,"郭明正開始向部落長輩學習族史；長輩談到事件，仍會先確認「現在可以說了嗎」。",L2],
+  ["1999","9 月 21 日","九二一大地震。地震後紀念碑重建，並以災後重建補助在碑旁增建餘生紀念館。",L1+" p.17","1999",1],
+  ["1999",null,"舞鶴的小說《餘生》出版。",L1+" p.17"],
+  ["1999 年後",null,"清流社區發展協會推動災後重建與賽德克文化復育，成立「茹沍 Ru-Dan 染織工作室」，並發展苧麻生態園、梅園、導覽與體驗活動。",LP+"〈921 地震災後重建與社區營造〉"],
+  ["2004","2 月 20 日","藝術家 Awi Silan 在碑的上方畫上族人的生活：狩獵、織布、舂米、口簧琴，以及種稻與牛耕。",L6],
+  ["約 2014",null,"設籍人口 499 人，其中 470 人是餘生者的後代；後代總數約 600 人，僅及事件前六個部落人口的一半。",L2],
+  ["2019",null,"北港溪對岸的中原部落開始舉辦尋根祭祖，每年夏末回到萬大水庫上方的巴蘭舊社。","原視新聞，2024-09-06"],
+  ["2021",null,"紀念館完成無障礙工程，經費由一位臺中企業家捐助。","原文會新聞，2021-05-24"],
+  ["今天",null,"每年元旦早上 8 點，族人在紀念碑前集合，祭拜祖靈；5 月 6 日迫遷日，也會到碑前遙祭祖先。",L1+" p.72；"+LP,"今天",1]
+];
+document.getElementById('tll').innerHTML=TL.map(([y,md,t,src,go,key])=>`<li class="${key?'key':''}"><div class="d">${y}${md?`<small>${md}</small>`:''}</div><p>${t}</p><div class="s">資料：${src}</div>${go?`<button class="go" data-layer="${go}">在記憶地層中看 ${go} →</button>`:''}</li>`).join('');
+
+/* ================= 展間切換 ================= */
+const ROOMS={time:document.getElementById('time'),ref:document.getElementById('ref'),today:document.getElementById('today')};
+const navb=document.getElementById('navb'),plan=document.getElementById('plan');
+function openRoom(id){for(const [k,el] of Object.entries(ROOMS)){const on=k===id;el.classList.toggle('on',on);el.setAttribute('aria-hidden',!on);if(on)el.scrollTop=0;}}
+function go(where,layer){
+  plan.classList.remove('on');
+  if(where==="pro"){openRoom(null);startPro();return;}
+  if(where==="time"||where==="ref"||where==="today"){closeCard();openRoom(where);mode="room";SND.bedTo(0,1);navb.classList.add('on');
+    if(where==="today"&&layer){const el=document.getElementById(layer);if(el)setTimeout(()=>ROOMS.today.scrollTo({top:el.offsetTop-70,behavior:reduce?'auto':'smooth'}),80);}return;}
+  // 回到記憶地層
+  openRoom(null);
+  if(mode==="room"||mode==="pro"){mode="map";SND.bedTo(.05,1.5);}
+  idle=0;
+  if(layer){const i=LAYERS.indexOf(layer);if(i>=0)goLayer(i);}
+}
+navb.onclick=()=>{plan.querySelectorAll('.rm').forEach(r=>r.classList.toggle('here',(r.dataset.go==="map"&&mode==="map")||(ROOMS[r.dataset.go]&&ROOMS[r.dataset.go].classList.contains('on'))));plan.classList.add('on');plan.querySelector('.rm').focus();};
+document.getElementById('planx').onclick=()=>plan.classList.remove('on');
+plan.addEventListener('click',e=>{if(e.target===plan)plan.classList.remove('on');});
+plan.querySelectorAll('.rm').forEach(r=>{r.onclick=()=>go(r.dataset.go);r.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go(r.dataset.go);}};});
+document.querySelectorAll('.room .bar [data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go,b.dataset.layer));
+document.querySelectorAll('.room .bar .pl').forEach(b=>b.onclick=()=>navb.onclick());
+document.getElementById('tll').addEventListener('click',e=>{const b=e.target.closest('.go');if(b)go("map",b.dataset.layer);});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&plan.classList.contains('on'))plan.classList.remove('on');});
+
+/* ================= 序廳 ================= */
+const pro=document.getElementById('pro'),pc=document.getElementById('pc'),px=pc.getContext('2d'),pcap=document.getElementById('pcap');
+const PSTEPS=[
+  {c:[-30,52],h:205,t:"這裡是臺灣。我們要去的地方，在中部的山區。"},
+  {c:[0,24],h:52,t:"南投縣仁愛鄉。這裡自古是賽德克族、泰雅族與布農族的家園。"},
+  {c:[8,6],h:15,t:"1930 年，霧社發生了霧社事件。隔年 5 月 6 日，倖存的族人被日本警察押送，經過埔里，遷到西邊的一座臺地。"},
+  {c:[0,0],h:1.25,t:"臺地上，北港溪、阿比斯溪、眉原溪三條溪流排成「川」字。日本人因此叫這裡「川中島」；族人叫它 Gluban。"},
+  {c:[0,0],h:.95,t:"戰後，這裡改稱清流部落。九十多年來，同一塊土地上，疊著一層又一層的記憶。"}
+];
+let pA={},pi=0,pView={c:[-30,52],h:205},pT0=0,pTyped=0,pRAF=null,pStart=0,pAuto=null;
+document.getElementById('pstep').innerHTML=PSTEPS.map(()=>'<i></i>').join('');
+function pSize(){const d=Math.min(2,devicePixelRatio||1);pc.width=innerWidth*d;pc.height=innerHeight*d;px.setTransform(d,0,0,d,0,0);}
+addEventListener('resize',()=>{if(mode==="pro")pSize();});
+function startPro(){pA={};mode="pro";closeCard();pSize();pro.classList.add('on');navb.classList.remove('on');pi=-1;pView={c:[-30,52],h:260};pStart=performance.now();pGo(0);if(!pRAF)pRAF=requestAnimationFrame(pDraw);SND.bedTo(.03,2);}
+function pGo(i){pi=i;pT0=performance.now();pTyped=0;
+  [...document.getElementById('pstep').children].forEach((el,k)=>el.classList.toggle('on',k<=i));
+  const last=i===PSTEPS.length-1;document.getElementById('pnext').textContent=last?'進入展廳 ›':'下一步 ›';document.getElementById('pskip').style.visibility=last?'hidden':'visible';document.getElementById('pprev').style.visibility=i>0?'visible':'hidden';
+  clearTimeout(pAuto);pAuto=null;SND.tick();}
+function pEnd(){clearTimeout(pAuto);pAuto=null;
+  /* 鏡頭先從正上方看「今天」這一層（北在上，和序廳的地圖對齊），再拉遠成斜角，看見整座記憶地層 */
+  for(const k in camGoal)delete camGoal[k];
+  const f=(Math.min(W,H*1.6)/2)/Math.tan(25*Math.PI/180),want=Math.min(W,H*.78)/2;
+  focus=LAYERS.length-1;LAYERS.forEach((_,i)=>{yOff[i]=i<focus?-.55:0;yAlpha[i]=i===focus?1:.16;tf[i]=0;});
+  Object.assign(cam,{yaw:Math.PI,pitch:1.5,tx:mapXY(0,0)[0],tz:mapXY(0,0)[1],ty:layerY(focus),d:Math.max(1.2,f*(.95/1.75)/want*(1750/MS)),fov:50});
+  mode="intro";navb.classList.add('on');syncRuler();SND.bedTo(.05,2);
+  pro.classList.remove('on');setTimeout(()=>{cancelAnimationFrame(pRAF);pRAF=null;},900);
+  if(reduce){Object.assign(cam,OVER(),{yaw:.7});focus=-1;mode="map";syncRuler();return;}
+  setTimeout(async()=>{focus=-1;syncRuler();const s0={...cam},o=OVER();
+    await tween(3200,k=>{cam.tx=s0.tx*(1-k);cam.yaw=s0.yaw+(Math.PI*.78-s0.yaw)*k;cam.pitch=s0.pitch+(o.pitch-s0.pitch)*k;cam.d=s0.d+(o.d-s0.d)*k;cam.ty=s0.ty+(o.ty-s0.ty)*k;});
+    mode="map";idle=0;},1500);}
+document.getElementById('pnext').onclick=()=>{const t=PSTEPS[pi].t;if(pTyped<t.length){pTyped=t.length;return;}pi<PSTEPS.length-1?pGo(pi+1):pEnd();};
+document.getElementById('pskip').onclick=pEnd;
+document.getElementById('pprev').onclick=()=>{if(pi>0)pGo(pi-1);};
+function pPoly(arr,unit,w2s,close){px.beginPath();for(let i=0;i<arr.length;i+=2){const [x,y]=w2s(arr[i]*unit,arr[i+1]*unit);i?px.lineTo(x,y):px.moveTo(x,y);}if(close)px.closePath();}
+function pDraw(now){
+  pRAF=requestAnimationFrame(pDraw);
+  const W2=innerWidth,H2=innerHeight,st=PSTEPS[Math.max(0,pi)];
+  const dt=Math.min(.1,(now-(pDraw.last||now))/1000);pDraw.last=now;const k=reduce?1:1-Math.exp(-dt*2.6);pView.c[0]+=(st.c[0]-pView.c[0])*k;pView.c[1]+=(st.c[1]-pView.c[1])*k;pView.h*=Math.pow(st.h/pView.h,k);
+  const sc=Math.min(W2,H2*.78)/(pView.h*2),cx=W2/2,cy=H2*.42;
+  const w2s=(x,y)=>[cx+(x-pView.c[0])*sc,cy+(y-pView.c[1])*sc];
+  px.clearRect(0,0,W2,H2);
+  // 背景網格
+  px.strokeStyle='rgba(95,227,255,.05)';px.lineWidth=1;const gs=56;for(let x=(cx%gs);x<W2;x+=gs){px.beginPath();px.moveTo(x,0);px.lineTo(x,H2);px.stroke();}for(let y=(cy%gs);y<H2;y+=gs){px.beginPath();px.moveTo(0,y);px.lineTo(W2,y);px.stroke();}
+  const glow=b=>{px.shadowColor='rgba(95,227,255,.9)';px.shadowBlur=b;};
+  // 各圖層的透明度都隨時間或縮放連續變化，換頁時不會突然出現或消失
+  const E=(key,target)=>{const v=pA[key]===undefined?target:pA[key];return pA[key]=v+(target-v)*(reduce?1:1-Math.exp(-dt*3));};
+  const zA=v=>Math.max(0,Math.min(1,v));
+  const far=zA((pView.h-1.6)/3);                 // 拉近到臺地時，行政界線慢慢淡出
+  const aTw=far, aNt=E('nt',pi>=1?1:0)*far, aRt=E('rt',pi>=2?1:0)*zA((pView.h-1.4)/2.5);
+  const aLoc=zA((9-pView.h)/6), aMod=E('mod',pi>=4?1:0), aL3=E('l3',pi>=3?1:0)*aLoc;
+  // 臺灣、南投、仁愛
+  if(aTw>.01){pPoly(ADM.tw,1,w2s,true);px.fillStyle=`rgba(95,227,255,${.05*aTw})`;px.fill();glow(10);px.strokeStyle=`rgba(95,227,255,${.75*aTw})`;px.lineWidth=1.4;px.stroke();px.shadowBlur=0;}
+  if(aNt>.01){pPoly(ADM.nt,1,w2s,true);px.strokeStyle=`rgba(191,244,255,${.6*aNt})`;px.lineWidth=1;px.setLineDash([4,4]);px.stroke();px.setLineDash([]);
+    pPoly(ADM.ra,1,w2s,true);px.fillStyle=`rgba(95,227,255,${.14*aNt})`;px.fill();glow(12);px.strokeStyle=`rgba(191,244,255,${.95*aNt})`;px.lineWidth=1.6;px.stroke();px.shadowBlur=0;}
+  px.font='600 13px "Noto Serif TC",serif';px.textAlign='center';
+  const a1=E('lab1',pi===1?1:0);if(a1>.01){let [x,y]=w2s(0,40);px.fillStyle=`rgba(191,244,255,${.8*a1})`;px.fillText('南投縣',x,y);[x,y]=w2s(20,-3);px.fillStyle=`rgba(230,251,255,${a1})`;px.fillText('仁愛鄉',x,y);}
+  const a0=E('p0',pi===0?1:0);if(a0>.01){const [x,y]=w2s(0,0);const r=6+3*Math.sin(now/300);px.strokeStyle=`rgba(191,244,255,${a0})`;px.lineWidth=1.5;px.beginPath();px.arc(x,y,r,0,7);px.stroke();}
+  // 遷移路線（示意）
+  if(aRt>.01){const tt=pi===2?Math.min(1,(now-pT0)/3500):1;const rt=[MARK.wushe,MARK.puli,[0,0]];
+    let [x,y]=w2s(...MARK.wushe);px.fillStyle=`rgba(255,217,168,${aRt})`;px.beginPath();px.arc(x,y,4,0,7);px.fill();px.fillText('霧社',x,y-10);
+    [x,y]=w2s(...MARK.puli);px.fillStyle=`rgba(191,244,255,${.8*aRt})`;px.beginPath();px.arc(x,y,2.5,0,7);px.fill();px.fillText('埔里',x,y+18);
+    const seg=[Math.hypot(rt[1][0]-rt[0][0],rt[1][1]-rt[0][1]),Math.hypot(rt[2][0]-rt[1][0],rt[2][1]-rt[1][1])],L=seg[0]+seg[1];let d=tt*L;
+    px.strokeStyle=`rgba(255,217,168,${.9*aRt})`;px.lineWidth=2;px.setLineDash([6,5]);px.lineDashOffset=-now/60;px.beginPath();px.moveTo(...w2s(...rt[0]));
+    for(let s=0;s<2&&d>0;s++){const f=Math.min(1,d/seg[s]);const a=rt[s],b=rt[s+1];px.lineTo(...w2s(a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f));d-=seg[s];}
+    px.stroke();px.setLineDash([]);
+    const a2=E('l2',pi===2?1:0)*aRt;if(a2>.01){[x,y]=w2s(0,0);px.fillStyle=`rgba(230,251,255,${a2})`;px.fillText('川中島',x-26,y-8);px.font='400 11px "Noto Sans TC",sans-serif';px.fillStyle=`rgba(255,217,168,${.75*a2})`;px.fillText('1931 遷移路線（示意）',...w2s(10,10.5));}}
+  // 臺地的溪流（拉近時漸漸浮現）；道路與房子在最後一步淡入
+  if(aLoc>.01){
+    for(const [key,list] of Object.entries(LOCAL)){const [t]=key.split('|');const isMod=['road','bldg','poi','resid'].includes(t);if(!['river','stream'].includes(t)&&!isMod)continue;
+      const al=isMod?aLoc*aMod:aLoc;if(al<.01)continue;
+      for(const arr of list){pPoly(arr,.005,w2s,t==='bldg'||t==='poi');
+        if(t==='river'){glow(10);px.strokeStyle=`rgba(120,235,255,${.95*al})`;px.lineWidth=3;}else if(t==='stream'){px.strokeStyle=`rgba(95,227,255,${.45*al})`;px.lineWidth=1.2;}else{px.strokeStyle=`rgba(191,244,255,${.55*al})`;px.lineWidth=1;}
+        px.stroke();px.shadowBlur=0;}}
+    if(aL3>.01){px.font='600 14px "Noto Serif TC",serif';px.fillStyle=`rgba(191,244,255,${aL3})`;
+      for(const [t,x,y] of [["北港溪",-.3,.86],["眉原溪",-.47,-.48],["阿比斯溪",.32,-.52]]){px.fillText(t,...w2s(x,y));}
+      px.font='900 22px "Noto Serif TC",serif';
+      px.fillStyle=`rgba(230,251,255,${aL3*(1-aMod)})`;px.fillText('川中島',...w2s(.2,.28));
+      px.fillStyle=`rgba(230,251,255,${aL3*aMod})`;px.fillText('清流部落',...w2s(.2,.28));
+      px.font='400 12px "Noto Sans TC",sans-serif';px.fillStyle=`rgba(143,207,221,${aL3})`;px.fillText('Alang Gluban',...w2s(.2,.4));}}
+  // 字幕（逐字出現）
+  const t=st.t;if(!reduce){pTyped=Math.max(pTyped,Math.min(t.length,Math.floor((now-pT0-400)/55)));}else pTyped=t.length;
+  pcap.innerHTML=t.slice(0,Math.max(0,pTyped))+(pTyped<t.length?'<span class="cur"></span>':'');
+  if(pTyped>=t.length&&pi<PSTEPS.length-1&&!pAuto){pAuto=setTimeout(()=>{pAuto=null;if(mode==="pro"&&pTyped>=PSTEPS[pi].t.length)pGo(pi+1);},3200);}
+}
+
+/* ================= 入口 ================= */
+document.getElementById('enter').onclick=()=>{
+  SND.init();
+  document.getElementById('gate').classList.add('off');
+  startPro();
+};
+syncRuler();
+requestAnimationFrame(frame);
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
