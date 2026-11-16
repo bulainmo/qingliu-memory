@@ -390,6 +390,13 @@ button{font:inherit;cursor:pointer}
       <li>今天的清流廳的派出所、從高處往下看、市集：林彥廷攝於 2026 年 10 月 31 日田調。</li>
       <li>館內展示的老照片與展板屬館方授權使用，本網站不收錄。</li>
     </ul>
+    <h2>聲音</h2>
+    <ul>
+      <li>場景環境音由多段錄音剪輯、混音與空間處理而成，<b>不是清流部落的現場錄音</b>。田調錄音幾乎全程有人聲，為了不公開受訪者的聲音，沒有使用。</li>
+      <li>底層環境音（樹林、風、溪流、蟲鳴、路邊）：Adobe Audition 音效庫，依 Adobe 使用條款混音使用。</li>
+      <li>台灣畫眉的叫聲（Upbeat huamei bird calling）、清晨鳥鳴（Bird call with so-called separated chirps）：Jidanni 攝錄於臺灣中部山區，CC0，via Wikimedia Commons。</li>
+      <li>台灣熊蟬（Cryptotympana takasagona v01）：Σ64，CC BY 3.0，via Wikimedia Commons；經裁剪、降低音量並與其他聲音混合。</li>
+    </ul>
     <h2>字型</h2>
     <p>Noto Serif TC、Noto Sans TC（SIL Open Font License）。</p>
     <h2>本網站</h2>
@@ -637,7 +644,7 @@ const LBL={"1931":[["川中島社",220,240]],"1937":[["川中島社",220,240],..
   "今天":[["清流部落 Alang Gluban",300,460],["餘生紀念館",-170,-140],["中原部落 Alang Nakahara",2060,430],["互助國小",1620,820],["眉冷山",-997,-1236],["松樹山",958,-396]]};
 /* ================= 聲音 =================
    底噪：瀏覽器合成的柔和白噪音（可聽見的中頻）。
-   場景環境音：放在 snd/ 的音檔（尚待取得免費素材或田野錄音）；
+   場景環境音：放在 snd/ 的音檔（2026-11-16 以 mix2.py 混音，來源見「資料與授權」）；
    每段第一次播放從隨機位置開始，之後依「虛擬時間」接續，就像那個場景的時間一直在走。 */
 const SND={ctx:null,on:true,master:null,bed:null,players:{},epoch:{},cur:null,
   init(){
@@ -1344,6 +1351,7 @@ document.getElementById('enter').onclick=()=>{
 syncRuler();
 requestAnimationFrame(frame);
 </script>
+
 
 
 
