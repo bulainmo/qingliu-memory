@@ -393,7 +393,7 @@ button{font:inherit;cursor:pointer}
     <h2>聲音</h2>
     <ul>
       <li>場景環境音由多段錄音剪輯、混音與空間處理而成，<b>不是清流部落的現場錄音</b>。田調錄音幾乎全程有人聲，為了不公開受訪者的聲音，沒有使用。</li>
-      <li>底層環境音（樹林、風、溪流、蟲鳴、路邊）：Adobe Audition 音效庫，依 Adobe 使用條款混音使用。</li>
+      <li>環境音（樹林、風、蟲鳴、水田與灌溉溝、路邊車流）與點綴音效（狗吠、蛙鳴、遠方機車）：Adobe Audition 音效庫，依 Adobe 使用條款剪輯混音使用。每個場景依畫面內容搭配聲音，畫面裡沒有水的場景不放水聲。</li>
       <li>台灣畫眉的叫聲（Upbeat huamei bird calling）、清晨鳥鳴（Bird call with so-called separated chirps）：Jidanni 攝錄於臺灣中部山區，CC0，via Wikimedia Commons。</li>
       <li>台灣熊蟬（Cryptotympana takasagona v01）：Σ64，CC BY 3.0，via Wikimedia Commons；經裁剪、降低音量並與其他聲音混合。</li>
     </ul>
@@ -644,9 +644,9 @@ const LBL={"1931":[["川中島社",220,240]],"1937":[["川中島社",220,240],..
   "今天":[["清流部落 Alang Gluban",300,460],["餘生紀念館",-170,-140],["中原部落 Alang Nakahara",2060,430],["互助國小",1620,820],["眉冷山",-997,-1236],["松樹山",958,-396]]};
 /* ================= 聲音 =================
    底噪：瀏覽器合成的柔和白噪音（可聽見的中頻）。
-   場景環境音：放在 snd/ 的音檔（2026-11-16 以 mix2.py 混音，來源見「資料與授權」）；
+   場景環境音：放在 snd/ 的音檔（2026-11-17 以 mix3.py 依畫面混音，來源見「資料與授權」）；
    每段第一次播放從隨機位置開始，之後依「虛擬時間」接續，就像那個場景的時間一直在走。 */
-const SND={ctx:null,on:true,master:null,bed:null,players:{},epoch:{},cur:null,
+const SND={ctx:null,on:true,master:null,bed:null,epoch:{},cur:null,
   init(){
     if(this.ctx) return; const A=window.AudioContext||window.webkitAudioContext; if(!A) return;
     const c=this.ctx=new A(); this.master=c.createGain(); this.master.gain.value=1; this.master.connect(c.destination);
@@ -660,18 +660,26 @@ const SND={ctx:null,on:true,master:null,bed:null,players:{},epoch:{},cur:null,
   bedTo(v,sec){if(!this.bed)return;const t=this.ctx.currentTime;this.bed.gain.cancelScheduledValues(t);this.bed.gain.setValueAtTime(this.bed.gain.value,t);this.bed.gain.linearRampToValueAtTime(v,t+sec);},
   tick(){if(!this.ctx||!this.on)return;const c=this.ctx,o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.frequency.setValueAtTime(1600,t);o.frequency.exponentialRampToValueAtTime(900,t+.06);
     g.gain.setValueAtTime(.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+.08);o.connect(g).connect(this.master);o.start(t);o.stop(t+.09);},
+  /* 用 Web Audio 播放：AudioBuffer 迴圈沒有縫隙（HTML audio 的 loop 在接縫會有短暫空白） */
+  bufs:{},
+  load(src){if(!this.bufs[src])this.bufs[src]=fetch(src).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer();}).then(ab=>new Promise((ok,no)=>this.ctx.decodeAudioData(ab,ok,no))).catch(()=>null);return this.bufs[src];},
   playScene(src){
-    if(!src) return; this.stopScene(true);
-    let a=this.players[src]; if(!a){a=new Audio();a.src=src;a.loop=true;a.preload='auto';a.volume=0;a.addEventListener('error',()=>{a.dataset.bad=1;});this.players[src]=a;}
-    if(a.dataset.bad) return; this.cur=a;
-    const start=()=>{const D=a.duration||60; if(this.epoch[src]===undefined) this.epoch[src]=performance.now()-Math.random()*D*1000;
-      try{a.currentTime=((performance.now()-this.epoch[src])/1000)%D;}catch(e){}
-      a.play().catch(()=>{}); this.fade(a,this.on?.85:0,1800);};
-    a.readyState>=1?start():a.addEventListener('loadedmetadata',start,{once:true});
+    if(!src) return; this.init(); if(!this.ctx) return; this.stopScene();
+    const c=this.ctx; if(c.state==='suspended') c.resume();
+    const token=this.token=(this.token||0)+1;
+    this.load(src).then(buf=>{
+      if(!buf||token!==this.token) return;
+      const D=buf.duration; if(this.epoch[src]===undefined) this.epoch[src]=performance.now()-Math.random()*D*1000;
+      const s=c.createBufferSource(); s.buffer=buf; s.loop=true;
+      const g=c.createGain(); g.gain.value=0; s.connect(g).connect(this.master);
+      s.start(0, ((performance.now()-this.epoch[src])/1000)%D);
+      const t=c.currentTime; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.85,t+1.8);
+      this.cur={s,g};
+    });
   },
-  stopScene(){const a=this.cur;if(!a)return;this.fade(a,0,900,()=>a.pause());this.cur=null;},
-  fade(a,to,ms,done){const from=a.volume,s=performance.now();(function st(){const k=Math.min(1,(performance.now()-s)/ms);a.volume=from+(to-from)*k;k<1?requestAnimationFrame(st):done&&done();})();},
-  toggle(){this.init();this.on=!this.on;if(this.ctx){const t=this.ctx.currentTime;this.master.gain.cancelScheduledValues(t);this.master.gain.linearRampToValueAtTime(this.on?1:0,t+.3);}if(this.cur)this.cur.volume=this.on?.85:0;}
+  stopScene(){this.token=(this.token||0)+1;const a=this.cur;if(!a)return;this.cur=null;const c=this.ctx,t=c.currentTime;
+    a.g.gain.cancelScheduledValues(t);a.g.gain.setValueAtTime(a.g.gain.value,t);a.g.gain.linearRampToValueAtTime(0,t+.9);try{a.s.stop(t+1);}catch(e){}},
+  toggle(){this.init();this.on=!this.on;if(this.ctx){const t=this.ctx.currentTime;this.master.gain.cancelScheduledValues(t);this.master.gain.linearRampToValueAtTime(this.on?1:0,t+.3);}}
 };
 
 /* ================= 畫布與相機 ================= */
@@ -1264,7 +1272,7 @@ const PSTEPS=[
   {c:[0,24],h:52,t:"南投縣仁愛鄉。這裡自古是賽德克族、泰雅族與布農族的家園。"},
   {c:[8,6],h:15,t:"1930 年，霧社發生了霧社事件。隔年 5 月 6 日，倖存的族人被日本警察押送，經過埔里，遷到西邊的一座臺地。"},
   {c:[0,0],h:1.25,t:"臺地上，北港溪、阿比斯溪、眉原溪三條溪流排成「川」字。日本人因此叫這裡「川中島」；族人叫它 Gluban。"},
-  {c:[0,0],h:.95,t:"戰後，這裡改稱清流部落。九十多年來，同一塊土地上，疊著一層又一層的記憶。"}
+  {c:[MX0_/1000,MY0_/1000],h:MS_/1000,t:"戰後，這裡改稱清流部落。九十多年來，同一塊土地上，疊著一層又一層的記憶。"}
 ];
 let pA={},pi=0,pView={c:[-30,52],h:205},pT0=0,pTyped=0,pRAF=null,pStart=0,pAuto=null;
 document.getElementById('pstep').innerHTML=PSTEPS.map(()=>'<i></i>').join('');
@@ -1280,12 +1288,20 @@ function pEnd(){clearTimeout(pAuto);pAuto=null;
   for(const k in camGoal)delete camGoal[k];
   const f=(Math.min(W,H*1.6)/2)/Math.tan(25*Math.PI/180),want=Math.min(W,H*.78)/2;
   focus=LAYERS.length-1;LAYERS.forEach((_,i)=>{yOff[i]=i<focus?-.55:0;yAlpha[i]=i===focus?1:.16;tf[i]=0;});
-  Object.assign(cam,{yaw:Math.PI,pitch:1.5,tx:mapXY(0,0)[0],tz:mapXY(0,0)[1],ty:layerY(focus),d:Math.max(1.2,f*(.95/1.75)/want*(1750/MS)),fov:50});
+  /* 序廳最後一步看的範圍＝地層圖板的範圍（中心 MX0、MY0，半寬 MS），兩者大小、位置完全重疊，才能無縫接上 */
+  const last=PSTEPS[PSTEPS.length-1];
+  Object.assign(cam,{yaw:Math.PI,pitch:1.5,tx:mapXY(last.c[0]*1000,last.c[1]*1000)[0],tz:mapXY(last.c[0]*1000,last.c[1]*1000)[1],ty:layerY(focus),d:f*(last.h*1000)/(want*MS),fov:50});
+  /* 兩邊畫面中心不同（序廳在 W/2、0.42H；地層在 CX、CY），微調鏡頭讓同一點落在同一個像素 */
+  {const goal=[innerWidth/2,innerHeight*.42],c0=[last.c[0]*1000,last.c[1]*1000];
+   for(let it=0;it<3;it++){setup();const [mx,mz]=mapXY(...c0),p0=P(mx,layerY(focus),mz);if(!p0)break;
+     const e=.01;cam.tx+=e;setup();const px1=P(mx,layerY(focus),mz);cam.tx-=e;cam.tz+=e;setup();const pz1=P(mx,layerY(focus),mz);cam.tz-=e;
+     const a=(px1[0]-p0[0])/e,b=(pz1[0]-p0[0])/e,c=(px1[1]-p0[1])/e,d2=(pz1[1]-p0[1])/e,det=a*d2-b*c;if(Math.abs(det)<1e-9)break;
+     const dx=goal[0]-p0[0],dy=goal[1]-p0[1];cam.tx+=(d2*dx-b*dy)/det;cam.tz+=(-c*dx+a*dy)/det;}}
   mode="intro";navb.classList.add('on');syncRuler();SND.bedTo(.05,2);
   pro.classList.remove('on');setTimeout(()=>{cancelAnimationFrame(pRAF);pRAF=null;},900);
   if(reduce){Object.assign(cam,OVER(),{yaw:.7});focus=-1;mode="map";syncRuler();return;}
   setTimeout(async()=>{focus=-1;syncRuler();const s0={...cam},o=OVER();
-    await tween(3200,k=>{cam.tx=s0.tx*(1-k);cam.yaw=s0.yaw+(Math.PI*.78-s0.yaw)*k;cam.pitch=s0.pitch+(o.pitch-s0.pitch)*k;cam.d=s0.d+(o.d-s0.d)*k;cam.ty=s0.ty+(o.ty-s0.ty)*k;});
+    await tween(3200,k=>{cam.tx=s0.tx*(1-k);cam.tz=s0.tz*(1-k);cam.yaw=s0.yaw+(Math.PI*.78-s0.yaw)*k;cam.pitch=s0.pitch+(o.pitch-s0.pitch)*k;cam.d=s0.d+(o.d-s0.d)*k;cam.ty=s0.ty+(o.ty-s0.ty)*k;});
     mode="map";idle=0;},1500);}
 document.getElementById('pnext').onclick=()=>{const t=PSTEPS[pi].t;if(pTyped<t.length){pTyped=t.length;return;}pi<PSTEPS.length-1?pGo(pi+1):pEnd();};
 document.getElementById('pskip').onclick=pEnd;
@@ -1351,6 +1367,7 @@ document.getElementById('enter').onclick=()=>{
 syncRuler();
 requestAnimationFrame(frame);
 </script>
+
 
 
 
